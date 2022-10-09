@@ -240,11 +240,12 @@ public static  class Program
                     break;
                 case "pleaseclose":
                     {
-                        arg.RespondAsync(text: thread.Owner is null ? "Error: Missing Owner" : $"<@{thread.Owner.Id}>", embed: new EmbedBuilder()
+                        arg.ModifyOriginalResponseAsync(m => m.Embed = new EmbedBuilder()
                         {
                             Title = "Thread Closing Reminder",
                             Description = "Has your issue been resolved, or your question been answered?\nIf so, please type `/resolved` to close your thread.\n\nIf not, please reply below to tell us what you still need.\n\nNote that if there is no reply for a few days, this thread will eventually close itself."
-                        }.Build(), ephemeral: false).Wait();
+                        }.Build()).Wait();
+                        thread.SendMessageAsync(thread.Owner is null ? "Error: Missing Owner" : $"<@{thread.Owner.Id}>").Wait();
                     }
                     break;
                 default:
