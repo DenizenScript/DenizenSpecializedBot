@@ -281,7 +281,7 @@ public static  class Program
                             }
                             else
                             {
-                                Console.WriteLine($"Don't send message, would uplicate");
+                                Console.WriteLine($"Don't send message, would duplicate");
                             }
                         }
                     }
@@ -323,6 +323,42 @@ public static  class Program
 
     public static Task Client_MessageReceived(SocketMessage message)
     {
+        try
+        {
+            lock (Lockable)
+            {
+                if (message.Channel is SocketThreadChannel thread && thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum))
+                {
+                    List<ulong> tags = new(thread.AppliedTags);
+                    TaggedNeed need = forum.GetTaggedNeed(tags);
+                    Console.WriteLine($"{message.Author.Id} wrote a message in {thread.Id} which is owned by {thread.Owner.Id}");
+                    if (message.Author.Id == thread.Owner.Id)
+                    {
+                        if (need == TaggedNeed.User)
+                        {
+                            Console.WriteLine($"Change from need User to Helper");
+                            tags.Remove(forum.NeedsUser.Id);
+                            tags.Add(forum.NeedsHelper.Id);
+                            thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                        }
+                    }
+                    else if (need == TaggedNeed.Helper)
+                    {
+                        if (message.Author is SocketGuildUser guildUser && guildUser.Roles is not null && guildUser.Roles.Any(r => r.Id == 315163935139692545ul))
+                        {
+                            Console.WriteLine($"Change from need Helper to User");
+                            tags.Remove(forum.NeedsHelper.Id);
+                            tags.Add(forum.NeedsUser.Id);
+                            thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
         return Task.CompletedTask;
     }
 }
