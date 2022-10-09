@@ -48,7 +48,7 @@ public static  class Program
                 Forums.Add(CitizensForum.ID, CitizensForum);
                 Forums.Add(SentinelForum.ID, SentinelForum);
                 ScripterHiringForum = new HiringForum(guild.GetForumChannel(1023545298640982056ul));
-                int cmdvers = 2;
+                int cmdvers = 3;
                 if (!File.Exists("config/cmdvers.txt") || File.ReadAllText("config/cmdvers.txt") != cmdvers.ToString())
                 {
                     RegisterCommands();
@@ -86,6 +86,7 @@ public static  class Program
             Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "helpthread", Description = "Mark the thread as a Help/Support request thread.", IsDMEnabled = false }.Build()).Wait();
             Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "discussionthread", Description = "Mark the thread as a Discussion thread. Do not use this if you are asking for help with something.", IsDMEnabled = false }.Build()).Wait();
             Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "pleaseclose", Description = "Sends a message to reminder users to close threads.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "specializedbot", Description = "Shows info about the DenizenSpecializedBot.", IsDMEnabled = false }.Build()).Wait();
         }
         catch (Exception ex)
         {
@@ -110,9 +111,18 @@ public static  class Program
 
     public static void SlashCommandHandle(SocketSlashCommand arg)
     {
+        void Accept(string title, string desc)
+        {
+            arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: false).Wait();
+        }
         void Refuse(string title, string desc)
         {
             arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: true).Wait();
+        }
+        if (arg.CommandName == "specializedbot")
+        {
+            Accept("DenizenSpecializedBot", "Hello! I'm the Denizen specialized Discord bot. I do things unique to the Denizen discord.\n\nYou can view my source code at: https://github.com/DenizenScript/DenizenSpecializedBot");
+            return;
         }
         if (arg.Channel is not SocketThreadChannel thread || thread.ParentChannel is not SocketForumChannel forumChannel || !Forums.TryGetValue(forumChannel.Id, out Forum forum))
         {
@@ -127,10 +137,6 @@ public static  class Program
         }
         try
         {
-            void Accept(string title, string desc)
-            {
-                arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: false).Wait();
-            }
             List<ulong> tags = new(thread.AppliedTags);
             void RemoveNeedTags()
             {
