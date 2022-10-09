@@ -62,10 +62,10 @@ public static  class Program
             Console.WriteLine("Loaded.");
             return Task.CompletedTask;
         };
-        Client.ThreadCreated += Client_ThreadCreated;
-        Client.ThreadUpdated += Client_ThreadUpdated;
-        Client.MessageReceived += Client_MessageReceived;
-        Client.SlashCommandExecuted += Client_SlashCommandExecuted;
+        Client.ThreadCreated += (thread) => Task.Run(() => Client_ThreadCreated(thread));
+        Client.ThreadUpdated += (oldThread, newThread) => Task.Run(() => Client_ThreadUpdated(oldThread, newThread));
+        Client.MessageReceived += (message) => Task.Run(() => Client_MessageReceived(message));
+        Client.SlashCommandExecuted += (args) => Task.Run(() => Client_SlashCommandExecuted(args));
         Console.WriteLine("Logging in...");
         Client.LoginAsync(TokenType.Bot, File.ReadAllText("config/token.txt")).Wait();
         Console.WriteLine("Starting...");
@@ -95,7 +95,7 @@ public static  class Program
         Console.WriteLine("Command registration complete.");
     }
 
-    public static Task Client_SlashCommandExecuted(SocketSlashCommand arg)
+    public static void Client_SlashCommandExecuted(SocketSlashCommand arg)
     {
         Console.WriteLine($"User {arg.User.Id} / {arg.User.Username} tried command {arg.CommandName} in {arg.Channel.Id} / {arg.Channel.Name}");
         try
@@ -106,7 +106,6 @@ public static  class Program
         {
             Console.WriteLine(ex);
         }
-        return Task.CompletedTask;
     }
 
     public static void SlashCommandHandle(SocketSlashCommand arg)
@@ -362,39 +361,36 @@ public static  class Program
 
     public static LockObject Lockable = new();
 
-    public static Task Client_ThreadCreated(SocketThreadChannel thread)
+    public static void Client_ThreadCreated(SocketThreadChannel thread)
     {
         double minutes = DateTimeOffset.Now.Subtract(thread.CreatedAt).TotalMinutes;
         Console.WriteLine($"Thread create {thread.Id} == {thread.Name} created at {thread.CreatedAt}, offset {minutes} min");
         if (Math.Abs(minutes) > 2)
         {
             Console.WriteLine($"Thread ignored due to time offset.");
-            return Task.CompletedTask;
+            return;
         }
-        Task.Delay(TimeSpan.FromSeconds(2)).ContinueWith(_ =>
+        Task.Delay(TimeSpan.FromSeconds(2)).Wait();
+        lock (Lockable)
         {
-            lock (Lockable)
+            if (LastThreadCreated == thread.Id)
             {
-                if (LastThreadCreated == thread.Id)
+                return;
+            }
+            LastThreadCreated = thread.Id;
+            if (Client.GetChannel(thread.Id) is SocketThreadChannel verifiedThread)
+            {
+                Console.WriteLine($"Thread verified {thread.Id} == {thread.Name}, will proc");
+                try
                 {
-                    return;
+                    HandleNewThreadSync(verifiedThread);
                 }
-                LastThreadCreated = thread.Id;
-                if (Client.GetChannel(thread.Id) is SocketThreadChannel verifiedThread)
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"Thread verified {thread.Id} == {thread.Name}, will proc");
-                    try
-                    {
-                        HandleNewThreadSync(verifiedThread);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex);
-                    }
+                    Console.WriteLine(ex);
                 }
             }
-        });
-        return Task.CompletedTask;
+        }
     }
 
     public static void HandleNewThreadSync(SocketThreadChannel thread)
@@ -436,7 +432,7 @@ public static  class Program
         return messages[0].Author.Id == Client.CurrentUser.Id;
     }
 
-    public static Task Client_ThreadUpdated(Cacheable<SocketThreadChannel, ulong> oldThread, SocketThreadChannel newThread)
+    public static void Client_ThreadUpdated(Cacheable<SocketThreadChannel, ulong> oldThread, SocketThreadChannel newThread)
     {
         lock (Lockable)
         {
@@ -517,7 +513,6 @@ public static  class Program
                 Console.WriteLine(ex);
             }
         }
-        return Task.CompletedTask;
     }
 
     public static DateTimeOffset LastScan;
@@ -575,7 +570,7 @@ public static  class Program
         }
     }
 
-    public static Task Client_MessageReceived(SocketMessage message)
+    public static void Client_MessageReceived(SocketMessage message)
     {
         try
         {
@@ -588,7 +583,7 @@ public static  class Program
                 }
                 if (message.Channel is not SocketThreadChannel thread)
                 {
-                    return Task.CompletedTask;
+                    return;
                 }
                 thread.DownloadUsersAsync().Wait();
                 if (thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum) && thread.Owner is not null)
@@ -623,6 +618,5 @@ public static  class Program
         {
             Console.WriteLine(ex);
         }
-        return Task.CompletedTask;
     }
 }
