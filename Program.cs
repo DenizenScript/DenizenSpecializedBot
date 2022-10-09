@@ -39,13 +39,15 @@ public static  class Program
             Console.WriteLine("Bot is ready.");
             try
             {
-                DenizenForum = new Forum(Client.GetGuild(GuildID).GetForumChannel(1026104994149171200ul));
-                CitizensForum = new Forum(Client.GetGuild(GuildID).GetForumChannel(1027028179908558918ul));
-                SentinelForum = new Forum(Client.GetGuild(GuildID).GetForumChannel(1024101613905920052ul));
+                SocketGuild guild = Client.GetGuild(GuildID);
+                guild.DownloadUsersAsync();
+                DenizenForum = new Forum(guild.GetForumChannel(1026104994149171200ul));
+                CitizensForum = new Forum(guild.GetForumChannel(1027028179908558918ul));
+                SentinelForum = new Forum(guild.GetForumChannel(1024101613905920052ul));
                 Forums.Add(DenizenForum.ID, DenizenForum);
                 Forums.Add(CitizensForum.ID, CitizensForum);
                 Forums.Add(SentinelForum.ID, SentinelForum);
-                ScripterHiringForum = new HiringForum(Client.GetGuild(GuildID).GetForumChannel(1023545298640982056ul));
+                ScripterHiringForum = new HiringForum(guild.GetForumChannel(1023545298640982056ul));
                 int cmdvers = 2;
                 if (!File.Exists("config/cmdvers.txt") || File.ReadAllText("config/cmdvers.txt") != cmdvers.ToString())
                 {
@@ -94,7 +96,20 @@ public static  class Program
 
     public static Task Client_SlashCommandExecuted(SocketSlashCommand arg)
     {
-        Console.Write($"User {arg.User.Id} / {arg.User.Username} tried command {arg.CommandName} in {arg.Channel.Id} / {arg.Channel.Name}");
+        Console.WriteLine($"User {arg.User.Id} / {arg.User.Username} tried command {arg.CommandName} in {arg.Channel.Id} / {arg.Channel.Name}");
+        try
+        {
+            SlashCommandHandle(arg);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        return Task.CompletedTask;
+    }
+
+    public static void SlashCommandHandle(SocketSlashCommand arg)
+    {
         void Refuse(string title, string desc)
         {
             arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: true).Wait();
@@ -102,12 +117,13 @@ public static  class Program
         if (arg.Channel is not SocketThreadChannel thread || thread.ParentChannel is not SocketForumChannel forumChannel || !Forums.TryGetValue(forumChannel.Id, out Forum forum))
         {
             Refuse("Invalid Channel", "That's not valid here. Only in the relevant support forum channels.");
-            return Task.CompletedTask;
+            return;
         }
+        thread.DownloadUsersAsync().Wait();
         if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (arg.User is SocketGuildUser user && user.Roles.Any(r => r.Id == HelperRoleID))))
         {
             Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
-            return Task.CompletedTask;
+            return;
         }
         try
         {
@@ -206,7 +222,11 @@ public static  class Program
                     break;
                 case "pleaseclose":
                     {
-                        Accept("Thread Closing Reminder", "Has your issue been resolved, or your question been answered?\nIf so, please type `/resolved` to close your thread.\n\nIf not, please reply below to tell us what you still need.\n\nNote that if there is no reply for a few days, this thread will eventually close itself.");
+                        arg.RespondAsync(text: thread.Owner is null ? "Error: Missing Owner" : $"<@{thread.Owner.Id}>", embed: new EmbedBuilder()
+                        {
+                            Title = "Thread Closing Reminder",
+                            Description = "Has your issue been resolved, or your question been answered?\nIf so, please type `/resolved` to close your thread.\n\nIf not, please reply below to tell us what you still need.\n\nNote that if there is no reply for a few days, this thread will eventually close itself."
+                        }.Build(), ephemeral: false).Wait();
                     }
                     break;
                 default:
@@ -218,7 +238,6 @@ public static  class Program
         {
             Console.WriteLine(ex);
         }
-        return Task.CompletedTask;
     }
 
     public static Forum DenizenForum, CitizensForum, SentinelForum;
@@ -548,7 +567,12 @@ public static  class Program
                     LastScan = DateTimeOffset.UtcNow;
                     Task.Run(ScanAllThreads);
                 }
-                if (message.Channel is SocketThreadChannel thread && thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum) && thread.Owner is not null)
+                if (message.Channel is not SocketThreadChannel thread)
+                {
+                    return Task.CompletedTask;
+                }
+                thread.DownloadUsersAsync().Wait();
+                if (thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum) && thread.Owner is not null)
                 {
                     List<ulong> tags = new(thread.AppliedTags);
                     TaggedNeed need = forum.GetTaggedNeed(tags);
