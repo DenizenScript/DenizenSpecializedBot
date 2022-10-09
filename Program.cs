@@ -111,9 +111,17 @@ public static  class Program
 
     public static void SlashCommandHandle(SocketSlashCommand arg)
     {
+        bool didDefer = false;
         void Accept(string title, string desc)
         {
-            arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: false).Wait();
+            if (didDefer)
+            {
+                arg.ModifyOriginalResponseAsync(m => m.Embed = new EmbedBuilder() { Title = title, Description = desc }.Build()).Wait();
+            }
+            else
+            {
+                arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build()).Wait();
+            }
         }
         void Refuse(string title, string desc)
         {
@@ -135,6 +143,8 @@ public static  class Program
             Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
             return;
         }
+        arg.DeferAsync().Wait();
+        didDefer = true;
         try
         {
             List<ulong> tags = new(thread.AppliedTags);
@@ -190,6 +200,7 @@ public static  class Program
                     {
                         RemoveNeedTags();
                         RemoveTypeTags();
+                        RemoveResolutionTags();
                         tags.Add(forum.Feature.Id);
                         tags.Add(forum.NeedsDev.Id);
                         Accept("Changed to Feature", "Thread is now a Feature thread. This indicates a request for a new feature to the plugin, that both (A) does not already exist and (B) reasonably can be added. If you are unsure whether this applies, use `/helpthread` to change back to a normal help thread.");
@@ -200,6 +211,7 @@ public static  class Program
                     {
                         RemoveNeedTags();
                         RemoveTypeTags();
+                        RemoveResolutionTags();
                         tags.Add(forum.Bug.Id);
                         tags.Add(forum.NeedsDev.Id);
                         Accept("Changed to Bug", "Thread is now a Bug thread. This indicates a core code bug that a developer must resolved, not an error message or other support topic. Please do not misuse the Bug label. Use `/helpthread` to switch the thread back to a normal help thread if you are not 100% confident it is a code bug.");
@@ -210,6 +222,7 @@ public static  class Program
                     {
                         RemoveNeedTags();
                         RemoveTypeTags();
+                        RemoveResolutionTags();
                         tags.Add(forum.HelpSupport.Id);
                         tags.Add(forum.NeedsHelper.Id);
                         Accept("Changed to Help/Support", "Thread is now a Help/Support thread. A helper will check your thread when available.");
