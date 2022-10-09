@@ -285,6 +285,32 @@ public static  class Program
                             }
                         }
                     }
+                    if (oldThread.HasValue) // TODO: Move this section to ModBot after discord.net update
+                    {
+                        List<ulong> oldTags = oldThread.Value.AppliedTags.Except(newThread.AppliedTags).ToList();
+                        List<ulong> newTags = newThread.AppliedTags.Except(oldThread.Value.AppliedTags).ToList();
+                        StringBuilder message = new();
+                        if (newTags.Any())
+                        {
+                            message.Append("Tags added: ");
+                            foreach (ulong id in newTags)
+                            {
+                                message.Append($"**{forumChannel.Tags.First(t => t.Id == id).Name}**, ");
+                            }
+                        }
+                        if (oldTags.Any())
+                        {
+                            message.Append("Tags removed: ");
+                            foreach (ulong id in oldTags)
+                            {
+                                message.Append($"**{forumChannel.Tags.First(t => t.Id == id).Name}**, ");
+                            }
+                        }
+                        if (message.Length > 0)
+                        {
+                            Client.GetGuild(GuildID).GetTextChannel(925393831023747072ul).SendMessageAsync($"Tags changed in thread <#{newThread.Id}> `{newThread.Id}`: {message}").Wait();
+                        }
+                    }
                 }
             }
             catch (Exception ex)
