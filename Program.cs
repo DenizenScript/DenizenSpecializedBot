@@ -13,12 +13,15 @@ using Discord;
 using System.Net.Http.Headers;
 using FreneticUtilities.FreneticToolkit;
 using FreneticUtilities.FreneticExtensions;
+using System.Threading.Channels;
 
 public static  class Program
 {
     public static DiscordSocketClient Client;
 
     public static ManualResetEvent StoppedEvent = new(false);
+
+    public static ulong GuildID = 315163488085475337ul;
 
     public static void Main()
     {
@@ -33,9 +36,13 @@ public static  class Program
             Console.WriteLine("Bot is ready.");
             try
             {
-                DenizenForum = new Forum(Client.GetGuild(315163488085475337ul).GetForumChannel(1026104994149171200ul));
-                CitizensForum = new Forum(Client.GetGuild(315163488085475337ul).GetForumChannel(1027028179908558918ul));
-                SentinelForum = new Forum(Client.GetGuild(315163488085475337ul).GetForumChannel(1024101613905920052ul));
+                DenizenForum = new Forum(Client.GetGuild(GuildID).GetForumChannel(1026104994149171200ul));
+                CitizensForum = new Forum(Client.GetGuild(GuildID).GetForumChannel(1027028179908558918ul));
+                SentinelForum = new Forum(Client.GetGuild(GuildID).GetForumChannel(1024101613905920052ul));
+                Forums.Add(DenizenForum.ID, DenizenForum);
+                Forums.Add(CitizensForum.ID, CitizensForum);
+                Forums.Add(SentinelForum.ID, SentinelForum);
+                ScripterHiringForum = new HiringForum(Client.GetGuild(GuildID).GetForumChannel(1023545298640982056ul));
             }
             catch (Exception ex)
             {
@@ -57,6 +64,8 @@ public static  class Program
 
     public static Forum DenizenForum, CitizensForum, SentinelForum;
 
+    public static HiringForum ScripterHiringForum;
+
     public static Dictionary<ulong, Forum> Forums = new();
 
     public enum TaggedType
@@ -73,6 +82,8 @@ public static  class Program
     {
         public Dictionary<string, ForumTag> Tags = new();
 
+        public ulong ID;
+
         public ForumTag Bug, Feature, HelpSupport, Discussion;
 
         public ForumTag NeedsHelper, NeedsDev, NeedsUser;
@@ -81,6 +92,7 @@ public static  class Program
 
         public Forum(IForumChannel channel)
         {
+            ID = channel.Id;
             foreach (ForumTag tag in channel.Tags)
             {
                 if (Tags.ContainsKey(tag.Name.ToLowerFast()))
@@ -99,7 +111,6 @@ public static  class Program
             NeedsUser = Tags.GetValueOrDefault("needs user reply");
             Resolved = Tags.GetValueOrDefault("resolved");
             Invalid = Tags.GetValueOrDefault("invalid");
-            Forums.Add(channel.Id, this);
         }
 
         public TaggedType GetTaggedType(IReadOnlyCollection<ulong> tags)
@@ -120,13 +131,49 @@ public static  class Program
         }
     }
 
+    public class HiringForum : Forum
+    {
+        public ForumTag Hiring, Scripter, Information, Completed, Scam, Cancelled;
+
+        public enum TaggedHandledState
+        {
+            None, Information, Completed, Invalid, Scam, Cancelled
+        }
+
+        public HiringForum(IForumChannel channel) : base(channel)
+        {
+            Hiring = Tags.GetValueOrDefault("hiring");
+            Scripter = Tags.GetValueOrDefault("scripter");
+            Information = Tags.GetValueOrDefault("information");
+            Completed = Tags.GetValueOrDefault("completed");
+            Scam = Tags.GetValueOrDefault("scam");
+            Cancelled = Tags.GetValueOrDefault("cancelled");
+        }
+
+        public TaggedHandledState GetTaggedHandledState(IReadOnlyCollection<ulong> tags)
+        {
+            if (tags.Contains(Information.Id)) { return TaggedHandledState.Information; }
+            if (tags.Contains(Completed.Id)) { return TaggedHandledState.Completed; }
+            if (tags.Contains(Invalid.Id)) { return TaggedHandledState.Invalid; }
+            if (tags.Contains(Scam.Id)) { return TaggedHandledState.Scam; }
+            if (tags.Contains(Cancelled.Id)) { return TaggedHandledState.Cancelled; }
+            return TaggedHandledState.None;
+        }
+    }
+
     private static ulong LastThreadCreated;
 
     public static LockObject Lockable = new();
 
     public static Task Client_ThreadCreated(SocketThreadChannel thread)
     {
-        Console.WriteLine($"Thread create {thread.Id} == {thread.Name}, wait");
+        double minutes = DateTimeOffset.Now.Subtract(thread.CreatedAt).TotalMinutes;
+        Console.WriteLine($"Thread create {thread.Id} == {thread.Name} created at {thread.CreatedAt}, offset {minutes} min");
+        if (Math.Abs(minutes) > 2)
+        {
+            Console.WriteLine($"Thread ignored due to time offset.");
+            return Task.CompletedTask;
+        }
         Task.Delay(TimeSpan.FromSeconds(2)).ContinueWith(_ =>
         {
             lock (Lockable)
@@ -157,10 +204,9 @@ public static  class Program
     {
         if (thread.ParentChannel is SocketForumChannel forumChannel)
         {
-            Forum forum = Forums.GetValueOrDefault(forumChannel.Id);
-            if (forum is not null)
+            List<ulong> tags = new(thread.AppliedTags);
+            if (Forums.TryGetValue(forumChannel.Id, out Forum forum))
             {
-                List<ulong> tags = new(thread.AppliedTags);
                 TaggedType type = forum.GetTaggedType(tags);
                 TaggedNeed need = forum.GetTaggedNeed(tags);
                 bool doModifyTags = false;
@@ -177,19 +223,73 @@ public static  class Program
                 Console.WriteLine($"Thread has type {type} and need {need}, doModify={doModifyTags}");
                 if (doModifyTags)
                 {
-                    thread.ModifyAsync(t => t.AppliedTags = tags);
+                    thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                 }
             }
         }
+    }
+
+    public static bool LastMessageWasMe(SocketThreadChannel channel)
+    {
+        List<IMessage> messages = new(channel.GetMessagesAsync(1).FlattenAsync().Result);
+        if (messages.IsEmpty())
+        {
+            return false;
+        }
+        return messages[0].Author.Id == Client.CurrentUser.Id;
     }
 
     public static Task Client_ThreadUpdated(Cacheable<SocketThreadChannel, ulong> oldThread, SocketThreadChannel newThread)
     {
         lock (Lockable)
         {
-            if (newThread.ParentChannel is SocketForumChannel forum)
+            try
             {
-
+                if (newThread.ParentChannel is SocketForumChannel forumChannel)
+                {
+                    if (Forums.TryGetValue(forumChannel.Id, out Forum forum))
+                    {
+                        if (newThread.IsArchived)
+                        {
+                            TaggedNeed need = forum.GetTaggedNeed(newThread.AppliedTags);
+                            if (need != TaggedNeed.None)
+                            {
+                                newThread.ModifyAsync(t => t.Archived = false).Wait();
+                                if (!LastMessageWasMe(newThread))
+                                {
+                                    newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
+                                        $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please remove the **Need** tag and add the :white_check_mark: **Resolved** tag"
+                                        ).Build()).Wait();
+                                }
+                            }
+                        }
+                    }
+                    else if (forumChannel.Id == ScripterHiringForum.ID)
+                    {
+                        HiringForum.TaggedHandledState handled = ScripterHiringForum.GetTaggedHandledState(newThread.AppliedTags);
+                        Console.WriteLine($"In hiring channel and state is {handled}");
+                        if (handled == HiringForum.TaggedHandledState.None && newThread.IsArchived)
+                        {
+                            Console.WriteLine($"Force unarchive");
+                            newThread.ModifyAsync(t => t.Archived = false).Wait();
+                            if (!LastMessageWasMe(newThread))
+                            {
+                                Console.WriteLine($"Send message");
+                                newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
+                                    $"Thread was closed, but has no resolution tag. If closing was intentional, please add a **Cancelled**, **Invalid**, or **Completed** tag"
+                                    ).Build()).Wait();
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Don't send message, would uplicate");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
         return Task.CompletedTask;
