@@ -14,6 +14,7 @@ using System.Net.Http.Headers;
 using FreneticUtilities.FreneticToolkit;
 using FreneticUtilities.FreneticExtensions;
 using System.Threading.Channels;
+using Discord.Rest;
 
 public static  class Program
 {
@@ -22,6 +23,8 @@ public static  class Program
     public static ManualResetEvent StoppedEvent = new(false);
 
     public static ulong GuildID = 315163488085475337ul;
+
+    public static ulong HelperRoleID = 315163935139692545ul;
 
     public static void Main()
     {
@@ -43,6 +46,12 @@ public static  class Program
                 Forums.Add(CitizensForum.ID, CitizensForum);
                 Forums.Add(SentinelForum.ID, SentinelForum);
                 ScripterHiringForum = new HiringForum(Client.GetGuild(GuildID).GetForumChannel(1023545298640982056ul));
+                int cmdvers = 2;
+                if (!File.Exists("config/cmdvers.txt") || File.ReadAllText("config/cmdvers.txt") != cmdvers.ToString())
+                {
+                    RegisterCommands();
+                    File.WriteAllText("config/cmdvers.txt", cmdvers.ToString());
+                }
             }
             catch (Exception ex)
             {
@@ -54,12 +63,162 @@ public static  class Program
         Client.ThreadCreated += Client_ThreadCreated;
         Client.ThreadUpdated += Client_ThreadUpdated;
         Client.MessageReceived += Client_MessageReceived;
+        Client.SlashCommandExecuted += Client_SlashCommandExecuted;
         Console.WriteLine("Logging in...");
         Client.LoginAsync(TokenType.Bot, File.ReadAllText("config/token.txt")).Wait();
         Console.WriteLine("Starting...");
         Client.StartAsync().Wait();
         Console.WriteLine("Started!");
         StoppedEvent.WaitOne();
+    }
+
+    public static void RegisterCommands()
+    {
+        Console.WriteLine("Re-register commands");
+        try
+        {
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "resolved", Description = "Mark the thread as resolved and close it.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "invalid", Description = "Mark the thread as invalid and close it.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "featurethread", Description = "Mark the thread as a Feature Request. Make sure this is really a Feature Request first.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "bugthread", Description = "Mark the thread as a code Bug that a developer must fix. Do not use this if you're not 100% sure.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "helpthread", Description = "Mark the thread as a Help/Support request thread.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "discussionthread", Description = "Mark the thread as a Discussion thread. Do not use this if you are asking for help with something.", IsDMEnabled = false }.Build()).Wait();
+            Client.GetGuild(GuildID).CreateApplicationCommandAsync(new SlashCommandBuilder() { Name = "pleaseclose", Description = "Sends a message to reminder users to close threads.", IsDMEnabled = false }.Build()).Wait();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        Console.WriteLine("Command registration complete.");
+    }
+
+    public static Task Client_SlashCommandExecuted(SocketSlashCommand arg)
+    {
+        Console.Write($"User {arg.User.Id} / {arg.User.Username} tried command {arg.CommandName} in {arg.Channel.Id} / {arg.Channel.Name}");
+        void Refuse(string title, string desc)
+        {
+            arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: true).Wait();
+        }
+        if (arg.Channel is not SocketThreadChannel thread || thread.ParentChannel is not SocketForumChannel forumChannel || !Forums.TryGetValue(forumChannel.Id, out Forum forum))
+        {
+            Refuse("Invalid Channel", "That's not valid here. Only in the relevant support forum channels.");
+            return Task.CompletedTask;
+        }
+        if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (arg.User is SocketGuildUser user && user.Roles.Any(r => r.Id == HelperRoleID))))
+        {
+            Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
+            return Task.CompletedTask;
+        }
+        try
+        {
+            void Accept(string title, string desc)
+            {
+                arg.RespondAsync(embed: new EmbedBuilder() { Title = title, Description = desc }.Build(), ephemeral: false).Wait();
+            }
+            List<ulong> tags = new(thread.AppliedTags);
+            void RemoveNeedTags()
+            {
+                tags.Remove(forum.NeedsDev.Id);
+                tags.Remove(forum.NeedsHelper.Id);
+                tags.Remove(forum.NeedsUser.Id);
+            }
+            void RemoveTypeTags()
+            {
+                tags.Remove(forum.Bug.Id);
+                tags.Remove(forum.HelpSupport.Id);
+                tags.Remove(forum.Feature.Id);
+                tags.Remove(forum.Discussion.Id);
+            }
+            void RemoveResolutionTags()
+            {
+                tags.Remove(forum.Resolved.Id);
+                tags.Remove(forum.Invalid.Id);
+            }
+            void PublishTags()
+            {
+                thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+            }
+            void CloseThread()
+            {
+                thread.ModifyAsync(t => t.Archived = true).Wait();
+            }
+            switch (arg.CommandName)
+            {
+                case "resolved":
+                    {
+                        RemoveNeedTags();
+                        RemoveResolutionTags();
+                        tags.Add(forum.Resolved.Id);
+                        PublishTags();
+                        Accept("Resolved", "Thread closed as resolved.");
+                        CloseThread();
+                    }
+                    break;
+                case "invalid":
+                    {
+                        RemoveNeedTags();
+                        RemoveResolutionTags();
+                        tags.Add(forum.Invalid.Id);
+                        PublishTags();
+                        Accept("Marked Invalid", "Thread closed as invalid.");
+                        CloseThread();
+                    }
+                    break;
+                case "featurethread":
+                    {
+                        RemoveNeedTags();
+                        RemoveTypeTags();
+                        tags.Add(forum.Feature.Id);
+                        tags.Add(forum.NeedsDev.Id);
+                        Accept("Changed to Feature", "Thread is now a Feature thread. This indicates a request for a new feature to the plugin, that both (A) does not already exist and (B) reasonably can be added. If you are unsure whether this applies, use `/helpthread` to change back to a normal help thread.");
+                        PublishTags();
+                    }
+                    break;
+                case "bugthread":
+                    {
+                        RemoveNeedTags();
+                        RemoveTypeTags();
+                        tags.Add(forum.Bug.Id);
+                        tags.Add(forum.NeedsDev.Id);
+                        Accept("Changed to Bug", "Thread is now a Bug thread. This indicates a core code bug that a developer must resolved, not an error message or other support topic. Please do not misuse the Bug label. Use `/helpthread` to switch the thread back to a normal help thread if you are not 100% confident it is a code bug.");
+                        PublishTags();
+                    }
+                    break;
+                case "helpthread":
+                    {
+                        RemoveNeedTags();
+                        RemoveTypeTags();
+                        tags.Add(forum.HelpSupport.Id);
+                        tags.Add(forum.NeedsHelper.Id);
+                        Accept("Changed to Help/Support", "Thread is now a Help/Support thread. A helper will check your thread when available.");
+                        PublishTags();
+                    }
+                    break;
+                case "discussionthread":
+                    {
+                        RemoveNeedTags();
+                        RemoveTypeTags();
+                        RemoveResolutionTags();
+                        tags.Add(forum.Discussion.Id);
+                        Accept("Changed to Discussion", "Thread is now a Discussion thread. This indicates that the thread is not requesting help in any way, and is just discussing a broad topic openly. If you need help with something, use `/helpthread` to switch the thread back to a normal help thread.");
+                        PublishTags();
+                    }
+                    break;
+                case "pleaseclose":
+                    {
+                        Accept("Thread Closing Reminder", "Has your issue been resolved, or your question been answered?\nIf so, please type `/resolved` to close your thread.\n\nIf not, please reply below to tell us what you still need.\n\nNote that if there is no reply for a few days, this thread will eventually close itself.");
+                    }
+                    break;
+                default:
+                    Console.WriteLine($"Error: invalid command {arg.CommandName}");
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        return Task.CompletedTask;
     }
 
     public static Forum DenizenForum, CitizensForum, SentinelForum;
@@ -247,18 +406,20 @@ public static  class Program
             {
                 if (newThread.ParentChannel is SocketForumChannel forumChannel)
                 {
+                    Console.WriteLine($"Thread {newThread.Id} was updated in a forum");
                     if (Forums.TryGetValue(forumChannel.Id, out Forum forum))
                     {
                         if (newThread.IsArchived)
                         {
                             TaggedNeed need = forum.GetTaggedNeed(newThread.AppliedTags);
+                            Console.WriteLine($"Thread {newThread.Id} was closed in a tracked forum, need = {need}");
                             if (need != TaggedNeed.None)
                             {
                                 newThread.ModifyAsync(t => t.Archived = false).Wait();
                                 if (!LastMessageWasMe(newThread))
                                 {
                                     newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
-                                        $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please remove the **Need** tag and add the :white_check_mark: **Resolved** tag"
+                                        $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use `/resolved` or `/invalid`."
                                         ).Build()).Wait();
                                 }
                             }
@@ -321,13 +482,73 @@ public static  class Program
         return Task.CompletedTask;
     }
 
+    public static DateTimeOffset LastScan;
+
+    public static void ScanAllThreads()
+    {
+        Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+        Console.WriteLine("Performing thread scan");
+        try
+        {
+            Scan(DenizenForum);
+            Scan(SentinelForum);
+            Scan(CitizensForum);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+    }
+
+    public static void Scan(Forum forum)
+    {
+        Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+        Console.WriteLine($"Scan channel {forum.ID}");
+        SocketForumChannel forumChannel = Client.GetGuild(GuildID).GetForumChannel(forum.ID);
+        foreach (RestThreadChannel thread in forumChannel.GetActiveThreadsAsync().Result)
+        {
+            CheckForThreadClose(thread, forum);
+        }
+    }
+
+    public static void CheckForThreadClose(RestThreadChannel thread, Forum forum)
+    {
+        List<IMessage> messages = new(thread.GetMessagesAsync(1).FlattenAsync().Result);
+        if (messages.IsEmpty())
+        {
+            return;
+        }
+        IMessage last = messages[0];
+        double days = Math.Abs(DateTimeOffset.Now.Subtract(last.Timestamp).TotalDays);
+        if (last.Author.Id == Client.CurrentUser.Id && last.Embeds.Count == 1 && days > 3)
+        {
+            IEmbed embed = last.Embeds.ToList()[0];
+            if (embed.Title == "Thread Closing Reminder")
+            {
+                Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}");
+                thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = "No response to request to close thread after 3 days. Automatically closing." }.Build()).Wait();
+                List<ulong> tags = new(thread.AppliedTags);
+                tags.Remove(forum.NeedsDev.Id);
+                tags.Remove(forum.NeedsHelper.Id);
+                tags.Remove(forum.NeedsUser.Id);
+                thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                thread.ModifyAsync(t => t.Archived = true).Wait();
+            }
+        }
+    }
+
     public static Task Client_MessageReceived(SocketMessage message)
     {
         try
         {
             lock (Lockable)
             {
-                if (message.Channel is SocketThreadChannel thread && thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum))
+                if (Math.Abs(DateTimeOffset.UtcNow.Subtract(LastScan).TotalHours) > 2)
+                {
+                    LastScan = DateTimeOffset.UtcNow;
+                    Task.Run(ScanAllThreads);
+                }
+                if (message.Channel is SocketThreadChannel thread && thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum) && thread.Owner is not null)
                 {
                     List<ulong> tags = new(thread.AppliedTags);
                     TaggedNeed need = forum.GetTaggedNeed(tags);
@@ -344,7 +565,7 @@ public static  class Program
                     }
                     else if (need == TaggedNeed.Helper)
                     {
-                        if (message.Author is SocketGuildUser guildUser && guildUser.Roles is not null && guildUser.Roles.Any(r => r.Id == 315163935139692545ul))
+                        if (message.Author is SocketGuildUser guildUser && guildUser.Roles is not null && guildUser.Roles.Any(r => r.Id == HelperRoleID))
                         {
                             Console.WriteLine($"Change from need Helper to User");
                             tags.Remove(forum.NeedsHelper.Id);
