@@ -35,6 +35,7 @@ public static  class Program
             {
                 DenizenForum = new Forum(Client.GetGuild(315163488085475337ul).GetForumChannel(1026104994149171200ul));
                 CitizensForum = new Forum(Client.GetGuild(315163488085475337ul).GetForumChannel(1027028179908558918ul));
+                SentinelForum = new Forum(Client.GetGuild(315163488085475337ul).GetForumChannel(1024101613905920052ul));
             }
             catch (Exception ex)
             {
@@ -54,7 +55,7 @@ public static  class Program
         StoppedEvent.WaitOne();
     }
 
-    public static Forum DenizenForum, CitizensForum;
+    public static Forum DenizenForum, CitizensForum, SentinelForum;
 
     public static Dictionary<ulong, Forum> Forums = new();
 
