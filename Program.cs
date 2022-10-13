@@ -423,14 +423,25 @@ public static  class Program
         }
     }
 
-    public static bool LastMessageWasMe(SocketThreadChannel channel)
+    public static bool LastMessageWasMeOrSevenDays(SocketThreadChannel channel)
     {
         List<IMessage> messages = new(channel.GetMessagesAsync(1).FlattenAsync().Result);
         if (messages.IsEmpty())
         {
             return false;
         }
-        return messages[0].Author.Id == Client.CurrentUser.Id;
+        if (messages[0].Author.Id == Client.CurrentUser.Id)
+        {
+            return true;
+        }
+        TimeSpan offset = DateTimeOffset.UtcNow.Subtract(messages[0].Timestamp);
+        double days = Math.Abs(offset.TotalDays);
+        double offDays = Math.Abs(days - 7);
+        if (offDays < 0.2)
+        {
+            return true;
+        }
+        return false;
     }
 
     public static void Client_ThreadUpdated(Cacheable<SocketThreadChannel, ulong> oldThread, SocketThreadChannel newThread)
@@ -451,7 +462,7 @@ public static  class Program
                             if (need != TaggedNeed.None)
                             {
                                 newThread.ModifyAsync(t => t.Archived = false).Wait();
-                                if (!LastMessageWasMe(newThread))
+                                if (!LastMessageWasMeOrSevenDays(newThread))
                                 {
                                     newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
                                         $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>."
@@ -468,7 +479,7 @@ public static  class Program
                         {
                             Console.WriteLine($"Force unarchive");
                             newThread.ModifyAsync(t => t.Archived = false).Wait();
-                            if (!LastMessageWasMe(newThread))
+                            if (!LastMessageWasMeOrSevenDays(newThread))
                             {
                                 Console.WriteLine($"Send message");
                                 newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
