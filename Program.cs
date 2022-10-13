@@ -454,7 +454,7 @@ public static  class Program
                                 if (!LastMessageWasMe(newThread))
                                 {
                                     newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
-                                        $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use `/resolved` or `/invalid`."
+                                        $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>."
                                         ).Build()).Wait();
                                 }
                             }
