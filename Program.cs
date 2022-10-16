@@ -26,6 +26,8 @@ public static  class Program
 
     public static ulong HelperRoleID = 315163935139692545ul;
 
+    public static bool HasInited = false;
+
     public static void Main()
     {
         DiscordSocketConfig config = new()
@@ -41,6 +43,11 @@ public static  class Program
             {
                 SocketGuild guild = Client.GetGuild(GuildID);
                 guild.DownloadUsersAsync();
+                if (HasInited)
+                {
+                    Console.WriteLine("Re-readied.");
+                    return Task.CompletedTask;
+                }
                 DenizenForum = new Forum(guild.GetForumChannel(1026104994149171200ul));
                 CitizensForum = new Forum(guild.GetForumChannel(1027028179908558918ul));
                 SentinelForum = new Forum(guild.GetForumChannel(1024101613905920052ul));
@@ -54,6 +61,7 @@ public static  class Program
                     RegisterCommands();
                     File.WriteAllText("config/cmdvers.txt", cmdvers.ToString());
                 }
+                HasInited = true;
             }
             catch (Exception ex)
             {
