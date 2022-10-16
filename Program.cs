@@ -436,7 +436,8 @@ public static  class Program
         }
         TimeSpan offset = DateTimeOffset.UtcNow.Subtract(messages[0].Timestamp);
         double days = Math.Abs(offset.TotalDays);
-        double offDays = Math.Abs(days - 7);
+        double weeks = Math.Round(days / 7.0);
+        double offDays = Math.Abs(days - (weeks * 7));
         if (offDays < 0.2)
         {
             return true;
