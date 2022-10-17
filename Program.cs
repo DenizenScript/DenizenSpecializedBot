@@ -594,6 +594,19 @@ public static  class Program
                     tags.Remove(forum.NeedsUser.Id);
                     thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                     thread.ModifyAsync(t => t.Archived = true).Wait();
+                    try
+                    {
+                        Task.Delay(TimeSpan.FromSeconds(1)).Wait();
+                        thread.UpdateAsync().Wait();
+                        if (!thread.IsArchived)
+                        {
+                            thread.ModifyAsync(t => t.Archived = true).Wait();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex);
+                    }
                 }
             }
         }
