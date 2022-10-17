@@ -589,10 +589,13 @@ public static  class Program
                     Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}");
                     thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = "No response to request to close thread after 3 days. Automatically closing." }.Build()).Wait();
                     List<ulong> tags = new(thread.AppliedTags);
-                    tags.Remove(forum.NeedsDev.Id);
-                    tags.Remove(forum.NeedsHelper.Id);
-                    tags.Remove(forum.NeedsUser.Id);
-                    Console.WriteLine($"Setting tags to {string.Join(',', tags)}");
+                    for (int i = 0; i < 5; i++) // Backup because might have borked duplicates
+                    {
+                        tags.Remove(forum.NeedsDev.Id);
+                        tags.Remove(forum.NeedsHelper.Id);
+                        tags.Remove(forum.NeedsUser.Id);
+                    }
+                    Console.WriteLine($"Setting tags to {string.Join(',', tags)}, exclude {forum.NeedsDev.Id} and {forum.NeedsHelper.Id} and {forum.NeedsUser.Id}");
                     thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                     thread.ModifyAsync(t => t.Archived = true).Wait();
                     try
