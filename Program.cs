@@ -567,26 +567,34 @@ public static  class Program
 
     public static void CheckForThreadClose(RestThreadChannel thread, Forum forum)
     {
-        List<IMessage> messages = new(thread.GetMessagesAsync(1).FlattenAsync().Result);
-        if (messages.IsEmpty())
+        List<IMessage> messages = new(thread.GetMessagesAsync(2).FlattenAsync().Result);
+        if (messages.Count < 2)
         {
             return;
         }
         IMessage last = messages[0];
+        IMessage secondLast = messages[1];
         double days = Math.Abs(DateTimeOffset.Now.Subtract(last.Timestamp).TotalDays);
-        if (last.Author.Id == Client.CurrentUser.Id && last.Embeds.Count == 1 && days > 3)
+        if (last.Author.Id == Client.CurrentUser.Id && secondLast.Author.Id == Client.CurrentUser.Id && days > 3)
         {
-            IEmbed embed = last.Embeds.ToList()[0];
-            if (embed.Title == "Thread Closing Reminder")
+            if (secondLast.Embeds.Count == 1 && last.Embeds.Count == 0)
             {
-                Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}");
-                thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = "No response to request to close thread after 3 days. Automatically closing." }.Build()).Wait();
-                List<ulong> tags = new(thread.AppliedTags);
-                tags.Remove(forum.NeedsDev.Id);
-                tags.Remove(forum.NeedsHelper.Id);
-                tags.Remove(forum.NeedsUser.Id);
-                thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
-                thread.ModifyAsync(t => t.Archived = true).Wait();
+                last = secondLast;
+            }
+            if (last.Embeds.Count == 1)
+            {
+                IEmbed embed = last.Embeds.ToList()[0];
+                if (embed.Title == "Thread Closing Reminder")
+                {
+                    Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}");
+                    thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = "No response to request to close thread after 3 days. Automatically closing." }.Build()).Wait();
+                    List<ulong> tags = new(thread.AppliedTags);
+                    tags.Remove(forum.NeedsDev.Id);
+                    tags.Remove(forum.NeedsHelper.Id);
+                    tags.Remove(forum.NeedsUser.Id);
+                    thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                    thread.ModifyAsync(t => t.Archived = true).Wait();
+                }
             }
         }
     }
