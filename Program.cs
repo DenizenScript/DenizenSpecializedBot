@@ -592,6 +592,7 @@ public static  class Program
                     tags.Remove(forum.NeedsDev.Id);
                     tags.Remove(forum.NeedsHelper.Id);
                     tags.Remove(forum.NeedsUser.Id);
+                    Console.WriteLine($"Setting tags to {string.Join(',', tags)}");
                     thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                     thread.ModifyAsync(t => t.Archived = true).Wait();
                     try
