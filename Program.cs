@@ -572,6 +572,10 @@ public static  class Program
         {
             return;
         }
+        if (!Forums.TryGetValue(thread.ParentChannelId, out forum)) // re-get the forum from actual ID because Discord returns threads in other forums for some reason
+        {
+            return;
+        }
         IMessage last = messages[0];
         IMessage secondLast = messages[1];
         double days = Math.Abs(DateTimeOffset.Now.Subtract(last.Timestamp).TotalDays);
@@ -586,7 +590,7 @@ public static  class Program
                 IEmbed embed = last.Embeds.ToList()[0];
                 if (embed.Title == "Thread Closing Reminder")
                 {
-                    Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}");
+                    Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}, in forum {forum.ID}");
                     thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = "No response to request to close thread after 3 days. Automatically closing." }.Build()).Wait();
                     List<ulong> tags = new(thread.AppliedTags);
                     for (int i = 0; i < 5; i++) // Backup because might have borked duplicates
