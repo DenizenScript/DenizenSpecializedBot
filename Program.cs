@@ -436,20 +436,24 @@ public static  class Program
         List<IMessage> messages = new(channel.GetMessagesAsync(1).FlattenAsync().Result);
         if (messages.IsEmpty())
         {
+            Console.WriteLine("No messages, false");
             return false;
         }
         if (messages[0].Author.Id == Client.CurrentUser.Id)
         {
+            Console.WriteLine("Was me, true");
             return true;
         }
         TimeSpan offset = DateTimeOffset.UtcNow.Subtract(messages[0].Timestamp);
         double days = Math.Abs(offset.TotalDays);
         double weeks = Math.Round(days / 7.0);
         double offDays = Math.Abs(days - (weeks * 7));
-        if (offDays < 0.2)
+        if (days > 6 && offDays < 0.2)
         {
+            Console.WriteLine($"Was off by {days} == {offDays}, true");
             return true;
         }
+        Console.WriteLine($"Was off by {days} == {offDays}, false");
         return false;
     }
 
@@ -473,9 +477,14 @@ public static  class Program
                                 newThread.ModifyAsync(t => t.Archived = false).Wait();
                                 if (!LastMessageWasMeOrSevenDays(newThread))
                                 {
+                                    Console.WriteLine("Send message");
                                     newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
                                         $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>."
                                         ).Build()).Wait();
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Don't send message, would duplicate");
                                 }
                             }
                         }
