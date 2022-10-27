@@ -210,7 +210,7 @@ public static  class Program
                         RemoveResolutionTags();
                         tags.Add(forum.Feature.Id);
                         tags.Add(forum.NeedsDev.Id);
-                        Accept("Changed to Feature", "Thread is now a Feature thread. This indicates a request for a new feature to the plugin, that both (A) does not already exist and (B) reasonably can be added. If you are unsure whether this applies, use `/helpthread` to change back to a normal help thread.");
+                        Accept("Changed to Feature", "Thread is now a Feature thread. This indicates a request for a new feature to the plugin, that both (A) does not already exist and (B) reasonably can be added. If you are unsure whether this applies, use </helpthread:1028674284870180883> to change back to a normal help thread.");
                         PublishTags();
                     }
                     break;
@@ -221,7 +221,7 @@ public static  class Program
                         RemoveResolutionTags();
                         tags.Add(forum.Bug.Id);
                         tags.Add(forum.NeedsDev.Id);
-                        Accept("Changed to Bug", "Thread is now a Bug thread. This indicates a core code bug that a developer must resolved, not an error message or other support topic. Please do not misuse the Bug label. Use `/helpthread` to switch the thread back to a normal help thread if you are not 100% confident it is a code bug.");
+                        Accept("Changed to Bug", "Thread is now a Bug thread. This indicates a core code bug that a developer must resolved, not an error message or other support topic. Please do not misuse the Bug label. Use </helpthread:1028674284870180883> to switch the thread back to a normal help thread if you are not 100% confident it is a code bug.");
                         PublishTags();
                     }
                     break;
@@ -242,7 +242,7 @@ public static  class Program
                         RemoveTypeTags();
                         RemoveResolutionTags();
                         tags.Add(forum.Discussion.Id);
-                        Accept("Changed to Discussion", "Thread is now a Discussion thread. This indicates that the thread is not requesting help in any way, and is just discussing a broad topic openly. If you need help with something, use `/helpthread` to switch the thread back to a normal help thread.");
+                        Accept("Changed to Discussion", "Thread is now a Discussion thread. This indicates that the thread is not requesting help in any way, and is just discussing a broad topic openly. If you need help with something, use </helpthread:1028674284870180883> to switch the thread back to a normal help thread.");
                         PublishTags();
                     }
                     break;
