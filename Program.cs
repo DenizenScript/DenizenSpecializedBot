@@ -139,15 +139,30 @@ public static  class Program
             Accept("DenizenSpecializedBot", "Hello! I'm the Denizen specialized Discord bot. I do things unique to the Denizen discord.\n\nYou can view my source code at: https://github.com/DenizenScript/DenizenSpecializedBot");
             return;
         }
-        if (arg.Channel is not SocketThreadChannel thread || thread.ParentChannel is not SocketForumChannel forumChannel || !Forums.TryGetValue(forumChannel.Id, out Forum forum))
+        if (arg.Channel is not SocketThreadChannel thread)
         {
-            Refuse("Invalid Channel", "That's not valid here. Only in the relevant support forum channels.");
+            Refuse("Invalid Channel", "That's not valid here. Only valid in threads.");
             return;
         }
         thread.DownloadUsersAsync().Wait();
         if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (arg.User is SocketGuildUser user && user.Roles.Any(r => r.Id == HelperRoleID))))
         {
             Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
+            return;
+        }
+        void CloseThread()
+        {
+            thread.ModifyAsync(t => t.Archived = true).Wait();
+        }
+        if (thread.ParentChannel is not SocketForumChannel forumChannel || !Forums.TryGetValue(forumChannel.Id, out Forum forum))
+        {
+            if (arg.CommandName == "resolved" || arg.CommandName == "invalid")
+            {
+                Accept("Closed", "Thread closed as requested by command.");
+                CloseThread();
+                return;
+            }
+            Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
             return;
         }
         arg.DeferAsync().Wait();
@@ -176,10 +191,6 @@ public static  class Program
             void PublishTags()
             {
                 thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
-            }
-            void CloseThread()
-            {
-                thread.ModifyAsync(t => t.Archived = true).Wait();
             }
             switch (arg.CommandName)
             {
@@ -255,7 +266,7 @@ public static  class Program
                         }.Build()).Wait();
                         thread.SendMessageAsync(thread.Owner is null ? "Error: Missing thread owner. Did they leave the Discord? If so, just use </resolved:1028673926114594866> yourself." : $"<@{thread.Owner.Id}>").Wait();
                         RemoveNeedTags();
-                        tags.Add(forum.NeedsUser.Id);
+                        tags.Add(forum.NeedsClose.Id);
                         PublishTags();
                     }
                     break;
@@ -283,7 +294,7 @@ public static  class Program
 
     public enum TaggedNeed
     {
-        None, Helper, Dev, User
+        None, Helper, Dev, User, Close
     }
 
     public class Forum
@@ -294,7 +305,7 @@ public static  class Program
 
         public ForumTag Bug, Feature, HelpSupport, Discussion;
 
-        public ForumTag NeedsHelper, NeedsDev, NeedsUser;
+        public ForumTag NeedsHelper, NeedsDev, NeedsUser, NeedsClose;
 
         public ForumTag Resolved, Invalid;
 
@@ -317,6 +328,7 @@ public static  class Program
             NeedsHelper = Tags.GetValueOrDefault("needs helper");
             NeedsDev = Tags.GetValueOrDefault("needs dev");
             NeedsUser = Tags.GetValueOrDefault("needs user reply");
+            NeedsClose = Tags.GetValueOrDefault("needs close");
             Resolved = Tags.GetValueOrDefault("resolved");
             Invalid = Tags.GetValueOrDefault("invalid");
         }
@@ -335,6 +347,7 @@ public static  class Program
             if (tags.Contains(NeedsHelper.Id)) { return TaggedNeed.Helper; }
             if (tags.Contains(NeedsDev.Id)) { return TaggedNeed.Dev; }
             if (tags.Contains(NeedsUser.Id)) { return TaggedNeed.User; }
+            if (tags.Contains(NeedsClose.Id)) { return TaggedNeed.Close; }
             return TaggedNeed.None;
         }
     }
@@ -500,7 +513,7 @@ public static  class Program
                             Console.WriteLine($"In a tracked support forum, need = {need}");
                             if (need != TaggedNeed.None)
                             {
-                                SendCloseButtonNotice(newThread, $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>.");
+                                SendCloseButtonNotice(newThread, $"Thread was closed either automatically by timeout or by the Discord manual close button. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>.");
                             }
                         }
                     }
@@ -655,10 +668,11 @@ public static  class Program
                     Console.WriteLine($"{message.Author.Id} wrote a message in {thread.Id} which is owned by {thread.Owner.Id}");
                     if (message.Author.Id == thread.Owner.Id)
                     {
-                        if (need == TaggedNeed.User)
+                        if (need == TaggedNeed.User || need == TaggedNeed.Close)
                         {
-                            Console.WriteLine($"Change from need User to Helper");
+                            Console.WriteLine($"Change from need User/Close to Helper");
                             tags.Remove(forum.NeedsUser.Id);
+                            tags.Remove(forum.NeedsClose.Id);
                             tags.Add(forum.NeedsHelper.Id);
                             thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                         }
