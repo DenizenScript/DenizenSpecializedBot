@@ -174,6 +174,7 @@ public static  class Program
             {
                 tags.Remove(forum.NeedsDev.Id);
                 tags.Remove(forum.NeedsHelper.Id);
+                tags.Remove(forum.NeedsClose.Id);
                 tags.Remove(forum.NeedsUser.Id);
             }
             void RemoveTypeTags()
