@@ -458,9 +458,13 @@ public static  class Program
         }
         if (messages[0].Author.Id == Client.CurrentUser.Id)
         {
-            Console.WriteLine("Was me, true");
-            outDays = 0;
-            return true;
+            if (messages[0].Embeds.Count == 1 && messages[0].Embeds.First().Title == "Thread Close Blocked")
+            {
+                Console.WriteLine("Was me, true");
+                outDays = 0;
+                return true;
+            }
+            Console.WriteLine("Was me but not a close notice");
         }
         TimeSpan offset = DateTimeOffset.UtcNow.Subtract(messages[0].Timestamp);
         double days = Math.Abs(offset.TotalDays);
@@ -670,19 +674,20 @@ public static  class Program
                     {
                         if (need == TaggedNeed.User || need == TaggedNeed.Close)
                         {
-                            Console.WriteLine($"Change from need User/Close to Helper");
+                            Console.WriteLine($"Change from need {need} to Helper");
                             tags.Remove(forum.NeedsUser.Id);
                             tags.Remove(forum.NeedsClose.Id);
                             tags.Add(forum.NeedsHelper.Id);
                             thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                         }
                     }
-                    else if (need == TaggedNeed.Helper)
+                    else if (need == TaggedNeed.Helper || need == TaggedNeed.Close)
                     {
                         if (message.Author is SocketGuildUser guildUser && guildUser.Roles is not null && guildUser.Roles.Any(r => r.Id == HelperRoleID))
                         {
-                            Console.WriteLine($"Change from need Helper to User");
+                            Console.WriteLine($"Change from need {need} to User");
                             tags.Remove(forum.NeedsHelper.Id);
+                            tags.Remove(forum.NeedsClose.Id);
                             tags.Add(forum.NeedsUser.Id);
                             thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
                         }
