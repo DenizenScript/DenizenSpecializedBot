@@ -434,23 +434,26 @@ public static  class Program
         }
     }
 
-    public static bool LastMessageWasMeOrSevenDays(SocketThreadChannel channel)
+    public static bool LastMessageWasMeOrSevenDays(SocketThreadChannel channel, out double outDays)
     {
         List<IMessage> messages = new(channel.GetMessagesAsync(1).FlattenAsync().Result);
         if (messages.IsEmpty())
         {
             Console.WriteLine("No messages, false");
+            outDays = 0;
             return false;
         }
         if (messages[0].Author.Id == Client.CurrentUser.Id)
         {
             Console.WriteLine("Was me, true");
+            outDays = 0;
             return true;
         }
         TimeSpan offset = DateTimeOffset.UtcNow.Subtract(messages[0].Timestamp);
         double days = Math.Abs(offset.TotalDays);
         double weeks = Math.Round(days / 7.0);
         double offDays = Math.Abs(days - (weeks * 7));
+        outDays = days;
         if (days > 6 && offDays < 0.2)
         {
             Console.WriteLine($"Was off by {days} == {offDays}, true");
@@ -458,6 +461,26 @@ public static  class Program
         }
         Console.WriteLine($"Was off by {days} == {offDays}, false");
         return false;
+    }
+
+    public static void SendCloseButtonNotice(SocketThreadChannel thread, string message)
+    {
+        Console.WriteLine($"Cancel archive of {thread.Id}");
+        thread.ModifyAsync(t => t.Archived = false).Wait();
+        if (!LastMessageWasMeOrSevenDays(thread, out double days))
+        {
+            Console.WriteLine("Send message");
+            string text = null;
+            if (days < 3)
+            {
+                text = thread.Owner is null ? "Error: no thread owner." : $"<@{thread.Owner.Id}>";
+            }
+            thread.SendMessageAsync(text: text, embed: new EmbedBuilder() { Title = "Thread Close Blocked", Description = message }.Build()).Wait();
+        }
+        else
+        {
+            Console.WriteLine("Don't send message, would duplicate");
+        }
     }
 
     public static void Client_ThreadUpdated(Cacheable<SocketThreadChannel, ulong> oldThread, SocketThreadChannel newThread)
@@ -474,21 +497,10 @@ public static  class Program
                         if (newThread.IsArchived)
                         {
                             TaggedNeed need = forum.GetTaggedNeed(newThread.AppliedTags);
-                            Console.WriteLine($"Thread {newThread.Id} was closed in a tracked forum, need = {need}");
+                            Console.WriteLine($"In a tracked support forum, need = {need}");
                             if (need != TaggedNeed.None)
                             {
-                                newThread.ModifyAsync(t => t.Archived = false).Wait();
-                                if (!LastMessageWasMeOrSevenDays(newThread))
-                                {
-                                    Console.WriteLine("Send message");
-                                    newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
-                                        $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>."
-                                        ).Build()).Wait();
-                                }
-                                else
-                                {
-                                    Console.WriteLine("Don't send message, would duplicate");
-                                }
+                                SendCloseButtonNotice(newThread, $"Thread was closed, but still has a **Needs {need}** tag. If closing was intentional, please use </resolved:1028673926114594866> or </invalid:1028673926898909185>.");
                             }
                         }
                     }
@@ -498,19 +510,7 @@ public static  class Program
                         Console.WriteLine($"In hiring channel and state is {handled}");
                         if (handled == HiringForum.TaggedHandledState.None && newThread.IsArchived)
                         {
-                            Console.WriteLine($"Force unarchive");
-                            newThread.ModifyAsync(t => t.Archived = false).Wait();
-                            if (!LastMessageWasMeOrSevenDays(newThread))
-                            {
-                                Console.WriteLine($"Send message");
-                                newThread.SendMessageAsync(embed: new EmbedBuilder().WithTitle("Thread Close Blocked").WithDescription(
-                                    $"Thread was closed, but has no resolution tag. If closing was intentional, please add a **Cancelled**, **Invalid**, or **Completed** tag"
-                                    ).Build()).Wait();
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Don't send message, would duplicate");
-                            }
+                            SendCloseButtonNotice(newThread, $"Thread was closed, but has no resolution tag. If closing was intentional, please add a **Cancelled**, **Invalid**, or **Completed** tag.");
                         }
                     }
                     if (oldThread.HasValue) // TODO: Move this section to ModBot after discord.net update
