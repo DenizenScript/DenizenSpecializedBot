@@ -628,6 +628,7 @@ public static  class Program
                         tags.Remove(forum.NeedsDev.Id);
                         tags.Remove(forum.NeedsHelper.Id);
                         tags.Remove(forum.NeedsUser.Id);
+                        tags.Remove(forum.NeedsClose.Id);
                     }
                     Console.WriteLine($"Setting tags to {string.Join(',', tags)}, exclude {forum.NeedsDev.Id} and {forum.NeedsHelper.Id} and {forum.NeedsUser.Id}");
                     thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
