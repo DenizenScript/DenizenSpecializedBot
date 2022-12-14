@@ -55,6 +55,7 @@ public static  class Program
                 Forums.Add(CitizensForum.ID, CitizensForum);
                 Forums.Add(SentinelForum.ID, SentinelForum);
                 ScripterHiringForum = new HiringForum(guild.GetForumChannel(1023545298640982056ul));
+                NonPluginSupportForum = new Forum(guild.GetForumChannel(1027976885520584814ul));
                 int cmdvers = 3;
                 if (!File.Exists("config/cmdvers.txt") || File.ReadAllText("config/cmdvers.txt") != cmdvers.ToString())
                 {
@@ -156,14 +157,31 @@ public static  class Program
         }
         if (thread.ParentChannel is not SocketForumChannel forumChannel || !Forums.TryGetValue(forumChannel.Id, out Forum forum))
         {
-            if (arg.CommandName == "resolved" || arg.CommandName == "invalid")
+            if (thread.ParentChannel.Id == NonPluginSupportForum.ID)
             {
-                Accept("Closed", "Thread closed as requested by command.");
-                CloseThread();
+                forum = NonPluginSupportForum;
+                List<ulong> tags = new(thread.AppliedTags);
+                if (arg.CommandName == "resolved" || arg.CommandName == "invalid" || arg.CommandName == "pleaseclose")
+                {
+                    // Fall through to normal handling
+                }
+                else
+                {
+                    Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
+                    return;
+                }
+            }
+            else
+            {
+                if (arg.CommandName == "resolved" || arg.CommandName == "invalid")
+                {
+                    Accept("Closed", "Thread closed as requested by command.");
+                    CloseThread();
+                    return;
+                }
+                Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
                 return;
             }
-            Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
-            return;
         }
         arg.DeferAsync().Wait();
         didDefer = true;
@@ -197,8 +215,11 @@ public static  class Program
             {
                 case "resolved":
                     {
-                        RemoveNeedTags();
-                        RemoveResolutionTags();
+                        if (forum != NonPluginSupportForum)
+                        {
+                            RemoveNeedTags();
+                            RemoveResolutionTags();
+                        }
                         tags.Add(forum.Resolved.Id);
                         PublishTags();
                         Accept("Resolved", "Thread closed as resolved.");
@@ -207,8 +228,11 @@ public static  class Program
                     break;
                 case "invalid":
                     {
-                        RemoveNeedTags();
-                        RemoveResolutionTags();
+                        if (forum != NonPluginSupportForum)
+                        {
+                            RemoveNeedTags();
+                            RemoveResolutionTags();
+                        }
                         tags.Add(forum.Invalid.Id);
                         PublishTags();
                         Accept("Marked Invalid", "Thread closed as invalid.");
@@ -266,8 +290,11 @@ public static  class Program
                             Description = "Has your issue been resolved, or your question been answered?\nIf so, please type </resolved:1028673926114594866> to close your thread.\nOr </invalid:1028673926898909185> if it's not possible to resolve.\n\nIf not yet resolved, please reply below to tell us what you still need.\n\n(Note that if there is no reply for a few days, this thread will eventually close itself.)"
                         }.Build()).Wait();
                         thread.SendMessageAsync(thread.Owner is null ? "Error: Missing thread owner. Did they leave the Discord? If so, just use </resolved:1028673926114594866> yourself." : $"<@{thread.Owner.Id}>").Wait();
-                        RemoveNeedTags();
-                        tags.Add(forum.NeedsClose.Id);
+                        if (forum != NonPluginSupportForum)
+                        {
+                            RemoveNeedTags();
+                            tags.Add(forum.NeedsClose.Id);
+                        }
                         PublishTags();
                     }
                     break;
@@ -282,7 +309,7 @@ public static  class Program
         }
     }
 
-    public static Forum DenizenForum, CitizensForum, SentinelForum;
+    public static Forum DenizenForum, CitizensForum, SentinelForum, NonPluginSupportForum;
 
     public static HiringForum ScripterHiringForum;
 
