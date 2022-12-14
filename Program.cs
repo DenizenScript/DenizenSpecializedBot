@@ -461,7 +461,7 @@ public static  class Program
                 {
                     Console.WriteLine($"No message for {thread.Id} because no log");
                 }
-                if (audit is not null)
+                else
                 {
                     SocketGuildUser user = thread.Guild.GetUser(audit.User.Id);
                     Console.WriteLine($"Send message for {thread.Id} because {user.Id} tried to close");

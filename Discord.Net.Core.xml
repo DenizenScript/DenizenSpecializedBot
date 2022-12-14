@@ -1793,7 +1793,7 @@
                 A task that represents the asynchronous modification operation.
             </returns>
         </member>
-        <member name="M:Discord.IForumChannel.CreatePostAsync(System.String,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags)">
+        <member name="M:Discord.IForumChannel.CreatePostAsync(System.String,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags,Discord.ForumTag[])">
             <summary>
                 Creates a new post (thread) within the forum.
             </summary>
@@ -1811,11 +1811,12 @@
             <param name="stickers">A collection of stickers to send with the message.</param>
             <param name="embeds">A array of <see cref="T:Discord.Embed"/>s to send with this response. Max 10.</param>
             <param name="flags">A message flag to be applied to the sent message, only <see cref="F:Discord.MessageFlags.SuppressEmbeds"/> is permitted.</param>
+            <param name="tags">An array of <see cref="T:Discord.ForumTag"/> to be applied to the post.</param>
             <returns>
                 A task that represents the asynchronous creation operation.
             </returns>
         </member>
-        <member name="M:Discord.IForumChannel.CreatePostWithFileAsync(System.String,System.String,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,System.Boolean,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags)">
+        <member name="M:Discord.IForumChannel.CreatePostWithFileAsync(System.String,System.String,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,System.Boolean,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags,Discord.ForumTag[])">
             <summary>
                 Creates a new post (thread) within the forum.
             </summary>
@@ -1835,11 +1836,12 @@
             <param name="stickers">A collection of stickers to send with the file.</param>
             <param name="embeds">A array of <see cref="T:Discord.Embed"/>s to send with this response. Max 10.</param>
             <param name="flags">A message flag to be applied to the sent message, only <see cref="F:Discord.MessageFlags.SuppressEmbeds"/> is permitted.</param>
+            <param name="tags">An array of <see cref="T:Discord.ForumTag"/> to be applied to the post.</param>
             <returns>
                 A task that represents the asynchronous creation operation.
             </returns>
         </member>
-        <member name="M:Discord.IForumChannel.CreatePostWithFileAsync(System.String,System.IO.Stream,System.String,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,System.Boolean,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags)">
+        <member name="M:Discord.IForumChannel.CreatePostWithFileAsync(System.String,System.IO.Stream,System.String,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,System.Boolean,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags,Discord.ForumTag[])">
             <summary>
                 Creates a new post (thread) within the forum.
             </summary>
@@ -1860,11 +1862,12 @@
             <param name="stickers">A collection of stickers to send with the file.</param>
             <param name="embeds">A array of <see cref="T:Discord.Embed"/>s to send with this response. Max 10.</param>
             <param name="flags">A message flag to be applied to the sent message, only <see cref="F:Discord.MessageFlags.SuppressEmbeds"/> is permitted.</param>
+            <param name="tags">An array of <see cref="T:Discord.ForumTag"/> to be applied to the post.</param>
             <returns>
                 A task that represents the asynchronous creation operation.
             </returns>
         </member>
-        <member name="M:Discord.IForumChannel.CreatePostWithFileAsync(System.String,Discord.FileAttachment,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags)">
+        <member name="M:Discord.IForumChannel.CreatePostWithFileAsync(System.String,Discord.FileAttachment,Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags,Discord.ForumTag[])">
             <summary>
                 Creates a new post (thread) within the forum.
             </summary>
@@ -1883,11 +1886,12 @@
             <param name="stickers">A collection of stickers to send with the file.</param>
             <param name="embeds">A array of <see cref="T:Discord.Embed"/>s to send with this response. Max 10.</param>
             <param name="flags">A message flag to be applied to the sent message, only <see cref="F:Discord.MessageFlags.SuppressEmbeds"/> is permitted.</param>
+            <param name="tags">An array of <see cref="T:Discord.ForumTag"/> to be applied to the post.</param>
             <returns>
                 A task that represents the asynchronous creation operation.
             </returns>
         </member>
-        <member name="M:Discord.IForumChannel.CreatePostWithFilesAsync(System.String,System.Collections.Generic.IEnumerable{Discord.FileAttachment},Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags)">
+        <member name="M:Discord.IForumChannel.CreatePostWithFilesAsync(System.String,System.Collections.Generic.IEnumerable{Discord.FileAttachment},Discord.ThreadArchiveDuration,System.Nullable{System.Int32},System.String,Discord.Embed,Discord.RequestOptions,Discord.AllowedMentions,Discord.MessageComponent,Discord.ISticker[],Discord.Embed[],Discord.MessageFlags,Discord.ForumTag[])">
             <summary>
                 Creates a new post (thread) within the forum.
             </summary>
@@ -1904,8 +1908,9 @@
             </param>
             <param name="components">The message components to be included with this message. Used for interactions.</param>
             <param name="stickers">A collection of stickers to send with the file.</param>
-            <param name="embeds">A array of <see cref="T:Discord.Embed"/>s to send with this response. Max 10.</param>
+            <param name="embeds">An array of <see cref="T:Discord.Embed"/>s to send with this response. Max 10.</param>
             <param name="flags">A message flag to be applied to the sent message, only <see cref="F:Discord.MessageFlags.SuppressEmbeds"/> is permitted.</param>
+            <param name="tags">An array of <see cref="T:Discord.ForumTag"/> to be applied to the post.</param>
             <returns>
                 A task that represents the asynchronous creation operation.
             </returns>
@@ -3948,6 +3953,11 @@
         <member name="F:Discord.GuildFeature.WelcomeScreenEnabled">
             <summary>
                 The guild has enabled the welcome screen.
+            </summary>
+        </member>
+        <member name="F:Discord.GuildFeature.DeveloperSupportServer">
+            <summary>
+                The guild has been set as a support server on the App Directory.
             </summary>
         </member>
         <member name="P:Discord.GuildFeatures.Value">
@@ -11980,15 +11990,22 @@
                 Represents a class used to make timestamps in messages. see <see href="https://discord.com/developers/docs/reference#message-formatting-timestamp-styles"/>.
             </summary>
         </member>
-        <member name="P:Discord.TimestampTag.Style">
-            <summary>
-                Gets or sets the style of the timestamp tag.
-            </summary>
-        </member>
         <member name="P:Discord.TimestampTag.Time">
             <summary>
-                Gets or sets the time for this timestamp tag.
+                Gets the time for this timestamp tag.
             </summary>
+        </member>
+        <member name="P:Discord.TimestampTag.Style">
+            <summary>
+                Gets the style of this tag. <see langword="null"/> if none was provided.
+            </summary>
+        </member>
+        <member name="M:Discord.TimestampTag.#ctor(System.DateTimeOffset,System.Nullable{Discord.TimestampTagStyles})">
+            <summary>
+                Creates a new <see cref="T:Discord.TimestampTag"/> from the provided time.
+            </summary>
+            <param name="time">The time for this timestamp tag.</param>
+            <param name="style">The style for this timestamp tag.</param>
         </member>
         <member name="M:Discord.TimestampTag.ToString">
             <summary>
@@ -11997,9 +12014,22 @@
                     If the <see cref="P:Discord.TimestampTag.Time"/> is null then the default 0 will be used.
                 </para>
             </summary>
+            <remarks>
+                Will use the provided <see cref="P:Discord.TimestampTag.Style"/> if provided. If this value is null, it will default to <see cref="F:Discord.TimestampTagStyles.ShortDateTime"/>.
+            </remarks>
             <returns>A string that is compatible in a discord message, ex: <code>&lt;t:1625944201:f&gt;</code></returns>
         </member>
-        <member name="M:Discord.TimestampTag.FromDateTime(System.DateTime,Discord.TimestampTagStyles)">
+        <member name="M:Discord.TimestampTag.ToString(Discord.TimestampTagStyles)">
+            <summary>
+                Converts the current timestamp tag to the string representation supported by discord.
+                <para>
+                    If the <see cref="P:Discord.TimestampTag.Time"/> is null then the default 0 will be used.
+                </para>
+            </summary>
+            <param name="style">The formatting style for this tag.</param>
+            <returns>A string that is compatible in a discord message, ex: <code>&lt;t:1625944201:f&gt;</code></returns>
+        </member>
+        <member name="M:Discord.TimestampTag.FromDateTime(System.DateTime,System.Nullable{Discord.TimestampTagStyles})">
             <summary>
                 Creates a new timestamp tag with the specified <see cref="T:System.DateTime"/> object.
             </summary>
@@ -12007,13 +12037,29 @@
             <param name="style">The style for this timestamp tag.</param>
             <returns>The newly create timestamp tag.</returns>
         </member>
-        <member name="M:Discord.TimestampTag.FromDateTimeOffset(System.DateTimeOffset,Discord.TimestampTagStyles)">
+        <member name="M:Discord.TimestampTag.FromDateTimeOffset(System.DateTimeOffset,System.Nullable{Discord.TimestampTagStyles})">
             <summary>
                 Creates a new timestamp tag with the specified <see cref="T:System.DateTimeOffset"/> object.
             </summary>
             <param name="time">The time of this timestamp tag.</param>
             <param name="style">The style for this timestamp tag.</param>
             <returns>The newly create timestamp tag.</returns>
+        </member>
+        <member name="M:Discord.TimestampTag.FormatFromDateTime(System.DateTime,Discord.TimestampTagStyles)">
+            <summary>
+                Immediately formats the provided time and style into a timestamp string.
+            </summary>
+            <param name="time">The time of this timestamp tag.</param>
+            <param name="style">The style for this timestamp tag.</param>
+            <returns>The newly create timestamp string.</returns>
+        </member>
+        <member name="M:Discord.TimestampTag.FormatFromDateTimeOffset(System.DateTimeOffset,Discord.TimestampTagStyles)">
+            <summary>
+                Immediately formats the provided time and style into a timestamp string.
+            </summary>
+            <param name="time">The time of this timestamp tag.</param>
+            <param name="style">The style for this timestamp tag.</param>
+            <returns>The newly create timestamp string.</returns>
         </member>
         <member name="T:Discord.TimestampTagStyles">
             <summary>
@@ -14615,6 +14661,11 @@
         <member name="F:Discord.PremiumType.Nitro">
             <summary>
                 Nitro subscription. Includes app perks as well as the games subscription service.
+            </summary>
+        </member>
+        <member name="F:Discord.PremiumType.NitroBasic">
+            <summary>
+                Nitro Basic subscription. Includes app perks like video backgrounds, sending bigger files.
             </summary>
         </member>
         <member name="T:Discord.SelfUserProperties">
