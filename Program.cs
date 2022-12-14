@@ -454,16 +454,23 @@ public static  class Program
         thread.ModifyAsync(t => t.Archived = false).Wait();
         thread.Guild.GetAuditLogsAsync(10).AggregateAsync((x, y) => x.Union(y).ToList()).AsTask().ContinueWith(list =>
         {
-            RestAuditLogEntry audit = list.Result.Where(a => a.Action == ActionType.ThreadUpdate && (a.Data as ThreadUpdateAuditLogData).Thread?.Id == thread.Id && thread.Guild.GetUser(a.User.Id) is SocketGuildUser user && !user.IsBot).FirstOrDefault();
-            if (audit is null)
+            try
             {
-                Console.WriteLine($"No message for {thread.Id} because no log");
+                RestAuditLogEntry audit = list.Result.Where(a => a.Action == ActionType.ThreadUpdate && (a.Data as ThreadUpdateAuditLogData).Thread?.Id == thread.Id && thread.Guild.GetUser(a.User.Id) is SocketGuildUser user && !user.IsBot).FirstOrDefault();
+                if (audit is null)
+                {
+                    Console.WriteLine($"No message for {thread.Id} because no log");
+                }
+                if (audit is not null)
+                {
+                    SocketGuildUser user = thread.Guild.GetUser(audit.User.Id);
+                    Console.WriteLine($"Send message for {thread.Id} because {user.Id} tried to close");
+                    thread.SendMessageAsync(text: $"<@{user.Id}>", embed: new EmbedBuilder() { Title = "Thread Close Blocked", Description = message }.Build()).Wait();
+                }
             }
-            if (audit is not null)
+            catch (Exception ex)
             {
-                SocketGuildUser user = thread.Guild.GetUser(audit.User.Id);
-                Console.WriteLine($"Send message for {thread.Id} because {user.Id} tried to close");
-                thread.SendMessageAsync(text: $"<@{user.Id}>", embed: new EmbedBuilder() { Title = "Thread Close Blocked", Description = message }.Build()).Wait();
+                Console.WriteLine($"Failed to check thread {thread.Id} because {ex}");
             }
         });
     }
