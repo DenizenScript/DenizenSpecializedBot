@@ -448,57 +448,24 @@ public static  class Program
         }
     }
 
-    public static bool LastMessageWasMeOrSevenDays(SocketThreadChannel channel, out double outDays)
-    {
-        List<IMessage> messages = new(channel.GetMessagesAsync(1).FlattenAsync().Result);
-        if (messages.IsEmpty())
-        {
-            Console.WriteLine("No messages, false");
-            outDays = 0;
-            return false;
-        }
-        if (messages[0].Author.Id == Client.CurrentUser.Id)
-        {
-            if (messages[0].Embeds.Count == 1 && messages[0].Embeds.First().Title == "Thread Close Blocked")
-            {
-                Console.WriteLine("Was me, true");
-                outDays = 0;
-                return true;
-            }
-            Console.WriteLine("Was me but not a close notice");
-        }
-        TimeSpan offset = DateTimeOffset.UtcNow.Subtract(messages[0].Timestamp);
-        double days = Math.Abs(offset.TotalDays);
-        double weeks = Math.Round(days / 7.0);
-        double offDays = Math.Abs(days - (weeks * 7));
-        outDays = days;
-        if (days > 6 && offDays < 0.2)
-        {
-            Console.WriteLine($"Was off by {days} == {offDays}, true");
-            return true;
-        }
-        Console.WriteLine($"Was off by {days} == {offDays}, false");
-        return false;
-    }
-
     public static void SendCloseButtonNotice(SocketThreadChannel thread, string message)
     {
         Console.WriteLine($"Cancel archive of {thread.Id}");
         thread.ModifyAsync(t => t.Archived = false).Wait();
-        if (!LastMessageWasMeOrSevenDays(thread, out double days))
+        thread.Guild.GetAuditLogsAsync(10).AggregateAsync((x, y) => x.Union(y).ToList()).AsTask().ContinueWith(list =>
         {
-            Console.WriteLine("Send message");
-            string text = null;
-            if (days < 3)
+            RestAuditLogEntry audit = list.Result.Where(a => a.Action == ActionType.ThreadUpdate && (a.Data as ThreadUpdateAuditLogData).Thread?.Id == thread.Id && thread.Guild.GetUser(a.User.Id) is SocketGuildUser user && !user.IsBot).FirstOrDefault();
+            if (audit is null)
             {
-                text = thread.Owner is null ? "Error: no thread owner." : $"<@{thread.Owner.Id}>";
+                Console.WriteLine($"No message for {thread.Id} because no log");
             }
-            thread.SendMessageAsync(text: text, embed: new EmbedBuilder() { Title = "Thread Close Blocked", Description = message }.Build()).Wait();
-        }
-        else
-        {
-            Console.WriteLine("Don't send message, would duplicate");
-        }
+            if (audit is not null)
+            {
+                SocketGuildUser user = thread.Guild.GetUser(audit.User.Id);
+                Console.WriteLine($"Send message for {thread.Id} because {user.Id} tried to close");
+                thread.SendMessageAsync(text: $"<@{user.Id}>", embed: new EmbedBuilder() { Title = "Thread Close Blocked", Description = message }.Build()).Wait();
+            }
+        });
     }
 
     public static void Client_ThreadUpdated(Cacheable<SocketThreadChannel, ulong> oldThread, SocketThreadChannel newThread)
