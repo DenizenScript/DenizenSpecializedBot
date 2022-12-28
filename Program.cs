@@ -209,6 +209,10 @@ public static  class Program
             }
             void PublishTags()
             {
+                if (tags.Count > 5)
+                {
+                    tags = tags.Skip(tags.Count - 5).ToList();
+                }
                 thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
             }
             switch (arg.CommandName)
@@ -220,7 +224,10 @@ public static  class Program
                             RemoveNeedTags();
                             RemoveResolutionTags();
                         }
-                        tags.Add(forum.Resolved.Id);
+                        if (!tags.Contains(forum.Resolved.Id))
+                        {
+                            tags.Add(forum.Resolved.Id);
+                        }
                         PublishTags();
                         Accept("Resolved", "Thread closed as resolved.");
                         CloseThread();
@@ -233,7 +240,10 @@ public static  class Program
                             RemoveNeedTags();
                             RemoveResolutionTags();
                         }
-                        tags.Add(forum.Invalid.Id);
+                        if (!tags.Contains(forum.Invalid.Id))
+                        {
+                            tags.Add(forum.Invalid.Id);
+                        }
                         PublishTags();
                         Accept("Marked Invalid", "Thread closed as invalid.");
                         CloseThread();
