@@ -297,7 +297,7 @@ public static  class Program
                         arg.ModifyOriginalResponseAsync(m => m.Embed = new EmbedBuilder()
                         {
                             Title = "Thread Closing Reminder",
-                            Description = "Has your issue been resolved, or your question been answered?\nIf so, please type </resolved:1028673926114594866> to close your thread.\nOr </invalid:1028673926898909185> if it's not possible to resolve.\n\nIf not yet resolved, please reply below to tell us what you still need.\n\n(Note that if there is no reply for a few days, this thread will eventually close itself.)"
+                            Description = "Has your issue been resolved, or your question been answered?\nIf so, please use the </resolved:1028673926114594866> command to close your thread.\nOr </invalid:1028673926898909185> if it's not possible to resolve.\n\nIf not yet resolved, please reply below to tell us what you still need.\n\n(Note that if there is no reply for a few days, this thread will eventually close itself.)"
                         }.Build()).Wait();
                         thread.SendMessageAsync(thread.Owner is null ? "Error: Missing thread owner. Did they leave the Discord? If so, just use </resolved:1028673926114594866> yourself." : $"<@{thread.Owner.Id}>").Wait();
                         if (forum != NonPluginSupportForum)
