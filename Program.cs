@@ -160,16 +160,10 @@ public static  class Program
             if (thread.ParentChannel.Id == NonPluginSupportForum.ID)
             {
                 forum = NonPluginSupportForum;
-                List<ulong> tags = new(thread.AppliedTags);
-                if (arg.CommandName == "resolved" || arg.CommandName == "invalid" || arg.CommandName == "pleaseclose")
-                {
-                    // Fall through to normal handling
-                }
-                else
-                {
-                    Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
-                    return;
-                }
+            }
+            else if (thread.ParentChannel.Id == ScripterHiringForum.ID)
+            {
+                forum = ScripterHiringForum;
             }
             else
             {
@@ -179,6 +173,16 @@ public static  class Program
                     CloseThread();
                     return;
                 }
+                Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
+                return;
+            }
+            List<ulong> tags = new(thread.AppliedTags);
+            if (arg.CommandName == "resolved" || arg.CommandName == "invalid" || arg.CommandName == "pleaseclose")
+            {
+                // Fall through to normal handling
+            }
+            else
+            {
                 Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
                 return;
             }
@@ -219,7 +223,7 @@ public static  class Program
             {
                 case "resolved":
                     {
-                        if (forum != NonPluginSupportForum)
+                        if (forum != NonPluginSupportForum && forum != ScripterHiringForum)
                         {
                             RemoveNeedTags();
                             RemoveResolutionTags();
@@ -235,7 +239,7 @@ public static  class Program
                     break;
                 case "invalid":
                     {
-                        if (forum != NonPluginSupportForum)
+                        if (forum != NonPluginSupportForum && forum != ScripterHiringForum)
                         {
                             RemoveNeedTags();
                             RemoveResolutionTags();
@@ -300,7 +304,7 @@ public static  class Program
                             Description = "Has your issue been resolved, or your question been answered?\nIf so, please use the </resolved:1028673926114594866> command to close your thread.\nOr </invalid:1028673926898909185> if it's not possible to resolve.\n\nIf not yet resolved, please reply below to tell us what you still need.\n\n(Note that if there is no reply for a few days, this thread will eventually close itself.)"
                         }.Build()).Wait();
                         thread.SendMessageAsync(thread.Owner is null ? "Error: Missing thread owner. Did they leave the Discord? If so, just use </resolved:1028673926114594866> yourself." : $"<@{thread.Owner.Id}>").Wait();
-                        if (forum != NonPluginSupportForum)
+                        if (forum != NonPluginSupportForum && forum != ScripterHiringForum)
                         {
                             RemoveNeedTags();
                             tags.Add(forum.NeedsClose.Id);
@@ -405,6 +409,7 @@ public static  class Program
             Scripter = Tags.GetValueOrDefault("scripter");
             Information = Tags.GetValueOrDefault("information");
             Completed = Tags.GetValueOrDefault("completed");
+            Resolved = Completed;
             Scam = Tags.GetValueOrDefault("scam");
             Cancelled = Tags.GetValueOrDefault("cancelled");
         }
