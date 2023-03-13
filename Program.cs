@@ -547,7 +547,25 @@ public static  class Program
                             SendCloseButtonNotice(newThread, $"Thread was closed, but has no resolution tag. If closing was intentional, please add a **Cancelled**, **Invalid**, or **Completed** tag.");
                         }
                     }
-                    if (oldThread.HasValue) // TODO: Move this section to ModBot after discord.net update
+                    if (oldThread.HasValue && oldThread.Value.IsArchived && !newThread.IsArchived)
+                    {
+                        Thread.Sleep(50); // Slight delay just to make sure audit log had a moment to update
+                        newThread.Guild.GetAuditLogsAsync(10).AggregateAsync((x, y) => x.Union(y).ToList()).AsTask().ContinueWith(list =>
+                        {
+                            RestAuditLogEntry audit = list.Result.Where(a => a.Action == ActionType.ThreadUpdate && (a.Data as ThreadUpdateAuditLogData).Thread?.Id == newThread.Id && newThread.Guild.GetUser(a.User.Id) is SocketGuildUser user && !user.IsBot).FirstOrDefault();
+                            if (audit is null)
+                            {
+                                Console.WriteLine($"No reopen message for {newThread.Id} because no log");
+                            }
+                            else
+                            {
+                                SocketGuildUser user = newThread.Guild.GetUser(audit.User.Id);
+                                Console.WriteLine($"Send message for {newThread.Id} because {user.Id} tried to close");
+                                newThread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Thread Reopened", Description = $"Thread was manually reopened by <@{user.Id}>." }.Build()).Wait();
+                            }
+                        });
+                    }
+                    /*if (oldThread.HasValue) // TODO: Move this section to ModBot after discord.net update
                     {
                         List<ulong> oldTags = oldThread.Value.AppliedTags.Except(newThread.AppliedTags).ToList();
                         List<ulong> newTags = newThread.AppliedTags.Except(oldThread.Value.AppliedTags).ToList();
@@ -572,7 +590,7 @@ public static  class Program
                         {
                             Client.GetGuild(GuildID).GetTextChannel(925393831023747072ul).SendMessageAsync($"Tags changed in thread <#{newThread.Id}> `{newThread.Id}`: {message}").Wait();
                         }
-                    }
+                    }*/
                 }
             }
             catch (Exception ex)
