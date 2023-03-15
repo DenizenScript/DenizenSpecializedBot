@@ -691,6 +691,8 @@ public static  class Program
         }
     }
 
+    public static ulong LastUserNotifiedChannelRedir = 0;
+
     public static void Client_MessageReceived(SocketMessage message)
     {
         try
@@ -701,6 +703,27 @@ public static  class Program
                 {
                     LastScan = DateTimeOffset.UtcNow;
                     Task.Run(ScanAllThreads);
+                }
+                if (message.Channel.Id == 477340871927398400ul) // chatter
+                {
+                    if (message.Author.IsBot || message.Author.IsWebhook)
+                    {
+                        return;
+                    }
+                    if (message.Author is not SocketGuildUser user || user.Roles.Any())
+                    {
+                        return;
+                    }
+                    if (message.Author.Id == LastUserNotifiedChannelRedir)
+                    {
+                        return;
+                    }
+                    string text = message.Content.ToLowerFast();
+                    if (text.Contains("citizen") || text.Contains(" npc") || text.Contains("npc "))
+                    {
+                        LastUserNotifiedChannelRedir = message.Author.Id;
+                        message.Channel.SendMessageAsync(text: $"Hey! if you're here to ask about Citizens, please make a post in the <#1027028179908558918> channel.", messageReference: message.Reference);
+                    }
                 }
                 if (message.Channel is not SocketThreadChannel thread)
                 {
