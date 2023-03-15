@@ -710,6 +710,7 @@ public static  class Program
                     {
                         return;
                     }
+                    Console.WriteLine($"Chatter message from {message.Author.Id} (last notified = {LastUserNotifiedChannelRedir}), (roles = {(message.Author is SocketGuildUser udebug ? string.Join(",", udebug.Roles.Select(s => s.Id)) : "")} of {message.Content}");
                     if (message.Author is not SocketGuildUser user || user.Roles.Any())
                     {
                         return;
