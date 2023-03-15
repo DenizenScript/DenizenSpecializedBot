@@ -722,8 +722,9 @@ public static  class Program
                     if (text.Contains("citizen") || text.Contains(" npc") || text.Contains("npc "))
                     {
                         LastUserNotifiedChannelRedir = message.Author.Id;
-                        message.Channel.SendMessageAsync(text: $"Hey! if you're here to ask about Citizens, please make a post in the <#1027028179908558918> channel.", messageReference: message.Reference);
+                        message.Channel.SendMessageAsync(text: $"Hey! if you're here to ask about Citizens, please make a post in the <#1027028179908558918> channel.", messageReference: message.Reference).Wait();
                     }
+                    return;
                 }
                 if (message.Channel is not SocketThreadChannel thread)
                 {
