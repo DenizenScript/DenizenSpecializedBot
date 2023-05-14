@@ -484,7 +484,7 @@ public static  class Program
                 Console.WriteLine($"Thread has type {type} and need {need}, doModify={doModifyTags}");
                 if (doModifyTags)
                 {
-                    thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                    thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
                 }
             }
         }
@@ -745,7 +745,7 @@ public static  class Program
                             tags.Remove(forum.NeedsUser.Id);
                             tags.Remove(forum.NeedsClose.Id);
                             tags.Add(forum.NeedsHelper.Id);
-                            thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                            thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
                         }
                     }
                     else if (need == TaggedNeed.Helper || need == TaggedNeed.Close)
@@ -756,7 +756,7 @@ public static  class Program
                             tags.Remove(forum.NeedsHelper.Id);
                             tags.Remove(forum.NeedsClose.Id);
                             tags.Add(forum.NeedsUser.Id);
-                            thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                            thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneHour; }).Wait();
                         }
                     }
                 }
