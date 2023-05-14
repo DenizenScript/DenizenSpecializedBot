@@ -211,13 +211,14 @@ public static  class Program
                 tags.Remove(forum.Resolved.Id);
                 tags.Remove(forum.Invalid.Id);
             }
+            ThreadArchiveDuration duration = thread.AutoArchiveDuration;
             void PublishTags()
             {
                 if (tags.Count > 5)
                 {
                     tags = tags.Skip(tags.Count - 5).ToList();
                 }
-                thread.ModifyAsync(t => t.AppliedTags = tags).Wait();
+                thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = duration; }).Wait();
             }
             switch (arg.CommandName)
             {
@@ -232,6 +233,7 @@ public static  class Program
                         {
                             tags.Add(forum.Resolved.Id);
                         }
+                        duration = ThreadArchiveDuration.OneDay;
                         PublishTags();
                         Accept("Resolved", "Thread closed as resolved.");
                         CloseThread();
@@ -248,6 +250,7 @@ public static  class Program
                         {
                             tags.Add(forum.Invalid.Id);
                         }
+                        duration = ThreadArchiveDuration.OneDay;
                         PublishTags();
                         Accept("Marked Invalid", "Thread closed as invalid.");
                         CloseThread();
@@ -260,6 +263,7 @@ public static  class Program
                         RemoveResolutionTags();
                         tags.Add(forum.Feature.Id);
                         tags.Add(forum.NeedsDev.Id);
+                        duration = ThreadArchiveDuration.OneDay;
                         Accept("Changed to Feature", "Thread is now a Feature thread. This indicates a request for a new feature to the plugin, that both (A) does not already exist and (B) reasonably can be added. If you are unsure whether this applies, use </helpthread:1028674284870180883> to change back to a normal help thread.");
                         PublishTags();
                     }
@@ -271,6 +275,7 @@ public static  class Program
                         RemoveResolutionTags();
                         tags.Add(forum.Bug.Id);
                         tags.Add(forum.NeedsDev.Id);
+                        duration = ThreadArchiveDuration.OneDay;
                         Accept("Changed to Bug", "Thread is now a Bug thread. This indicates a core code bug that a developer must resolved, not an error message or other support topic. Please do not misuse the Bug label. Use </helpthread:1028674284870180883> to switch the thread back to a normal help thread if you are not 100% confident it is a code bug.");
                         PublishTags();
                     }
@@ -282,6 +287,7 @@ public static  class Program
                         RemoveResolutionTags();
                         tags.Add(forum.HelpSupport.Id);
                         tags.Add(forum.NeedsHelper.Id);
+                        duration = ThreadArchiveDuration.OneDay;
                         Accept("Changed to Help/Support", "Thread is now a Help/Support thread. A helper will check your thread when available.");
                         PublishTags();
                     }
@@ -292,6 +298,7 @@ public static  class Program
                         RemoveTypeTags();
                         RemoveResolutionTags();
                         tags.Add(forum.Discussion.Id);
+                        duration = ThreadArchiveDuration.OneDay;
                         Accept("Changed to Discussion", "Thread is now a Discussion thread. This indicates that the thread is not requesting help in any way, and is just discussing a broad topic openly. If you need help with something, use </helpthread:1028674284870180883> to switch the thread back to a normal help thread.");
                         PublishTags();
                     }
@@ -309,6 +316,7 @@ public static  class Program
                             RemoveNeedTags();
                             tags.Add(forum.NeedsClose.Id);
                         }
+                        duration = ThreadArchiveDuration.OneHour;
                         PublishTags();
                     }
                     break;
