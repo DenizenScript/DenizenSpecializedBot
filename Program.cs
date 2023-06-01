@@ -479,11 +479,11 @@ public static  class Program
         if (thread.ParentChannel is SocketForumChannel forumChannel)
         {
             List<ulong> tags = new(thread.AppliedTags);
+            bool doModifyTags = false;
             if (Forums.TryGetValue(forumChannel.Id, out Forum forum))
             {
                 TaggedType type = forum.GetTaggedType(tags);
                 TaggedNeed need = forum.GetTaggedNeed(tags);
-                bool doModifyTags = false;
                 if (type == TaggedType.None)
                 {
                     doModifyTags = true;
@@ -495,25 +495,20 @@ public static  class Program
                     tags.Add(forum.NeedsHelper.Id);
                 }
                 Console.WriteLine($"Thread has type {type} and need {need}, doModify={doModifyTags}");
-                if (doModifyTags)
-                {
-                    thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
-                }
             }
             else if (forumChannel.Id == CitizensContribForum.ID)
             {
-                TaggedNeed need = forum.GetTaggedNeed(tags);
-                bool doModifyTags = false;
+                TaggedNeed need = CitizensContribForum.GetTaggedNeed(tags);
                 if (need == TaggedNeed.None)
                 {
                     doModifyTags = true;
                     tags.Add(CitizensContribForum.NeedsDev.Id);
                 }
                 Console.WriteLine($"Thread has need {need}, doModify={doModifyTags}");
-                if (doModifyTags)
-                {
-                    thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
-                }
+            }
+            if (doModifyTags)
+            {
+                thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
             }
         }
     }
