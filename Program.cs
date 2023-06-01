@@ -56,6 +56,7 @@ public static  class Program
                 Forums.Add(SentinelForum.ID, SentinelForum);
                 ScripterHiringForum = new HiringForum(guild.GetForumChannel(1023545298640982056ul));
                 NonPluginSupportForum = new Forum(guild.GetForumChannel(1027976885520584814ul));
+                CitizensContribForum = new Forum(guild.GetForumChannel(1101521266105667716ul));
                 int cmdvers = 3;
                 if (!File.Exists("config/cmdvers.txt") || File.ReadAllText("config/cmdvers.txt") != cmdvers.ToString())
                 {
@@ -164,6 +165,10 @@ public static  class Program
             else if (thread.ParentChannel.Id == ScripterHiringForum.ID)
             {
                 forum = ScripterHiringForum;
+            }
+            else if (thread.ParentChannel.Id == CitizensContribForum.ID)
+            {
+                forum = CitizensContribForum;
             }
             else
             {
@@ -311,7 +316,7 @@ public static  class Program
                             Description = "Has your issue been resolved, or your question been answered?\nIf so, please use the </resolved:1028673926114594866> command to close your thread.\nOr </invalid:1028673926898909185> if it's not possible to resolve.\n\nIf not yet resolved, please reply below to tell us what you still need.\n\n(Note that if there is no reply for a few days, this thread will eventually close itself.)"
                         }.Build()).Wait();
                         thread.SendMessageAsync(thread.Owner is null ? "Error: Missing thread owner. Did they leave the Discord? If so, just use </resolved:1028673926114594866> yourself." : $"<@{thread.Owner.Id}>").Wait();
-                        if (forum != NonPluginSupportForum && forum != ScripterHiringForum)
+                        if (forum.NeedsClose.Id != 0)
                         {
                             RemoveNeedTags();
                             tags.Add(forum.NeedsClose.Id);
@@ -331,7 +336,7 @@ public static  class Program
         }
     }
 
-    public static Forum DenizenForum, CitizensForum, SentinelForum, NonPluginSupportForum;
+    public static Forum DenizenForum, CitizensForum, SentinelForum, NonPluginSupportForum, CitizensContribForum;
 
     public static HiringForum ScripterHiringForum;
 
@@ -495,6 +500,21 @@ public static  class Program
                     thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
                 }
             }
+            else if (forumChannel.Id == CitizensContribForum.ID)
+            {
+                TaggedNeed need = forum.GetTaggedNeed(tags);
+                bool doModifyTags = false;
+                if (need == TaggedNeed.None)
+                {
+                    doModifyTags = true;
+                    tags.Add(CitizensContribForum.NeedsDev.Id);
+                }
+                Console.WriteLine($"Thread has need {need}, doModify={doModifyTags}");
+                if (doModifyTags)
+                {
+                    thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = ThreadArchiveDuration.OneDay; }).Wait();
+                }
+            }
         }
     }
 
@@ -534,8 +554,12 @@ public static  class Program
                 if (newThread.ParentChannel is SocketForumChannel forumChannel)
                 {
                     Console.WriteLine($"Thread {newThread.Id} was updated in a forum");
-                    if (Forums.TryGetValue(forumChannel.Id, out Forum forum))
+                    if (Forums.TryGetValue(forumChannel.Id, out Forum forum) || forumChannel.Id == CitizensContribForum.ID)
                     {
+                        if (forumChannel.Id == CitizensContribForum.ID)
+                        {
+                            forum = CitizensContribForum;
+                        }
                         if (newThread.IsArchived)
                         {
                             TaggedNeed need = forum.GetTaggedNeed(newThread.AppliedTags);
@@ -579,32 +603,6 @@ public static  class Program
                             }
                         });
                     }
-                    /*if (oldThread.HasValue) // TODO: Move this section to ModBot after discord.net update
-                    {
-                        List<ulong> oldTags = oldThread.Value.AppliedTags.Except(newThread.AppliedTags).ToList();
-                        List<ulong> newTags = newThread.AppliedTags.Except(oldThread.Value.AppliedTags).ToList();
-                        StringBuilder message = new();
-                        if (newTags.Any())
-                        {
-                            message.Append("Tags added: ");
-                            foreach (ulong id in newTags)
-                            {
-                                message.Append($"**{forumChannel.Tags.First(t => t.Id == id).Name}**, ");
-                            }
-                        }
-                        if (oldTags.Any())
-                        {
-                            message.Append("Tags removed: ");
-                            foreach (ulong id in oldTags)
-                            {
-                                message.Append($"**{forumChannel.Tags.First(t => t.Id == id).Name}**, ");
-                            }
-                        }
-                        if (message.Length > 0)
-                        {
-                            Client.GetGuild(GuildID).GetTextChannel(925393831023747072ul).SendMessageAsync($"Tags changed in thread <#{newThread.Id}> `{newThread.Id}`: {message}").Wait();
-                        }
-                    }*/
                 }
             }
             catch (Exception ex)
