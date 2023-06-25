@@ -49,7 +49,7 @@ public static  class Program
                     return Task.CompletedTask;
                 }
                 DenizenForum = new Forum(guild.GetForumChannel(1026104994149171200ul));
-                CitizensForum = new Forum(guild.GetForumChannel(1027028179908558918ul));
+                CitizensForum = new Forum(guild.GetForumChannel(1027028179908558918ul)) { CloseWaitDays = 2 };
                 SentinelForum = new Forum(guild.GetForumChannel(1024101613905920052ul));
                 Forums.Add(DenizenForum.ID, DenizenForum);
                 Forums.Add(CitizensForum.ID, CitizensForum);
@@ -364,6 +364,8 @@ public static  class Program
 
         public ForumTag Resolved, Invalid;
 
+        public int CloseWaitDays = 3;
+
         public Forum(IForumChannel channel)
         {
             ID = channel.Id;
@@ -650,7 +652,8 @@ public static  class Program
         IMessage last = messages[0];
         IMessage secondLast = messages[1];
         double days = Math.Abs(DateTimeOffset.Now.Subtract(last.Timestamp).TotalDays);
-        if (last.Author.Id == Client.CurrentUser.Id && secondLast.Author.Id == Client.CurrentUser.Id && days > 3)
+        int maxDays = forum.CloseWaitDays;
+        if (last.Author.Id == Client.CurrentUser.Id && secondLast.Author.Id == Client.CurrentUser.Id && days > maxDays)
         {
             if (secondLast.Embeds.Count == 1 && last.Embeds.Count == 0)
             {
@@ -662,7 +665,7 @@ public static  class Program
                 if (embed.Title == "Thread Closing Reminder")
                 {
                     Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}, in forum {forum.ID}");
-                    thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = "No response to request to close thread after 3 days. Automatically closing." }.Build()).Wait();
+                    thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = $"No response to request to close thread after {maxDays} days. Automatically closing." }.Build()).Wait();
                     List<ulong> tags = new(thread.AppliedTags);
                     for (int i = 0; i < 5; i++) // Backup because might have borked duplicates
                     {
