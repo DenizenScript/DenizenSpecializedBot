@@ -42,7 +42,7 @@ public static  class Program
             try
             {
                 SocketGuild guild = Client.GetGuild(GuildID);
-                guild.DownloadUsersAsync();
+                Task.Run(() => guild.DownloadUsersAsync().Wait());
                 if (HasInited)
                 {
                     Console.WriteLine("Re-readied.");
@@ -51,9 +51,11 @@ public static  class Program
                 DenizenForum = new Forum(guild.GetForumChannel(1026104994149171200ul));
                 CitizensForum = new Forum(guild.GetForumChannel(1027028179908558918ul)) { CloseWaitDays = 2 };
                 SentinelForum = new Forum(guild.GetForumChannel(1024101613905920052ul));
+                ClientizenForum = new Forum(guild.GetForumChannel(1131872289688928266ul));
                 Forums.Add(DenizenForum.ID, DenizenForum);
                 Forums.Add(CitizensForum.ID, CitizensForum);
                 Forums.Add(SentinelForum.ID, SentinelForum);
+                Forums.Add(ClientizenForum.ID, ClientizenForum);
                 ScripterHiringForum = new HiringForum(guild.GetForumChannel(1023545298640982056ul));
                 NonPluginSupportForum = new Forum(guild.GetForumChannel(1027976885520584814ul));
                 CitizensContribForum = new Forum(guild.GetForumChannel(1101521266105667716ul));
@@ -336,7 +338,7 @@ public static  class Program
         }
     }
 
-    public static Forum DenizenForum, CitizensForum, SentinelForum, NonPluginSupportForum, CitizensContribForum;
+    public static Forum DenizenForum, CitizensForum, SentinelForum, NonPluginSupportForum, CitizensContribForum, ClientizenForum;
 
     public static HiringForum ScripterHiringForum;
 
@@ -620,6 +622,7 @@ public static  class Program
             Scan(DenizenForum);
             Scan(SentinelForum);
             Scan(CitizensForum);
+            Scan(ClientizenForum);
         }
         catch (Exception ex)
         {
