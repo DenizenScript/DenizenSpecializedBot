@@ -342,7 +342,7 @@ public static  class Program
 
     public static HiringForum ScripterHiringForum;
 
-    public static Dictionary<ulong, Forum> Forums = new();
+    public static Dictionary<ulong, Forum> Forums = [];
 
     public enum TaggedType
     {
@@ -356,7 +356,7 @@ public static  class Program
 
     public class Forum
     {
-        public Dictionary<string, ForumTag> Tags = new();
+        public Dictionary<string, ForumTag> Tags = [];
 
         public ulong ID;
 
