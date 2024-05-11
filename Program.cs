@@ -24,7 +24,7 @@ public static  class Program
 
     public static ulong GuildID = 315163488085475337ul;
 
-    public static ulong HelperRoleID = 315163935139692545ul;
+    public static ulong HelperRoleID = 315163935139692545ul, HelperLiteRoleID = 1238884088174084117ul;
 
     public static bool HasInited = false;
 
@@ -149,7 +149,7 @@ public static  class Program
             return;
         }
         thread.DownloadUsersAsync().Wait();
-        if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (arg.User is SocketGuildUser user && user.Roles.Any(r => r.Id == HelperRoleID))))
+        if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (arg.User is SocketGuildUser user && user.Roles.Any(r => r.Id == HelperRoleID || r.Id == HelperLiteRoleID))))
         {
             Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
             return;
@@ -757,7 +757,7 @@ public static  class Program
                     }
                     else if (need == TaggedNeed.Helper || need == TaggedNeed.Close)
                     {
-                        if (message.Author is SocketGuildUser guildUser && guildUser.Roles is not null && guildUser.Roles.Any(r => r.Id == HelperRoleID))
+                        if (message.Author is SocketGuildUser guildUser && guildUser.Roles is not null && guildUser.Roles.Any(r => r.Id == HelperRoleID || r.Id == HelperLiteRoleID))
                         {
                             Console.WriteLine($"Change from need {need} to User");
                             tags.Remove(forum.NeedsHelper.Id);
