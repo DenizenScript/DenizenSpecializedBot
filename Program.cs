@@ -28,6 +28,8 @@ public static  class Program
 
     public static bool HasInited = false;
 
+    public static SocketGuild MainGuild;
+
     public static void Main()
     {
         DiscordSocketConfig config = new()
@@ -41,24 +43,24 @@ public static  class Program
             Console.WriteLine("Bot is ready.");
             try
             {
-                SocketGuild guild = Client.GetGuild(GuildID);
-                Task.Run(() => guild.DownloadUsersAsync().Wait());
+                MainGuild = Client.GetGuild(GuildID);
+                Task.Run(() => MainGuild.DownloadUsersAsync().Wait());
                 if (HasInited)
                 {
                     Console.WriteLine("Re-readied.");
                     return Task.CompletedTask;
                 }
-                DenizenForum = new Forum(guild.GetForumChannel(1026104994149171200ul));
-                CitizensForum = new Forum(guild.GetForumChannel(1027028179908558918ul)) { CloseWaitDays = 2 };
-                SentinelForum = new Forum(guild.GetForumChannel(1024101613905920052ul));
-                ClientizenForum = new Forum(guild.GetForumChannel(1131872289688928266ul));
+                DenizenForum = new Forum(MainGuild.GetForumChannel(1026104994149171200ul));
+                CitizensForum = new Forum(MainGuild.GetForumChannel(1027028179908558918ul)) { CloseWaitDays = 2 };
+                SentinelForum = new Forum(MainGuild.GetForumChannel(1024101613905920052ul));
+                ClientizenForum = new Forum(MainGuild.GetForumChannel(1131872289688928266ul));
                 Forums.Add(DenizenForum.ID, DenizenForum);
                 Forums.Add(CitizensForum.ID, CitizensForum);
                 Forums.Add(SentinelForum.ID, SentinelForum);
                 Forums.Add(ClientizenForum.ID, ClientizenForum);
-                ScripterHiringForum = new HiringForum(guild.GetForumChannel(1023545298640982056ul));
-                NonPluginSupportForum = new Forum(guild.GetForumChannel(1027976885520584814ul));
-                CitizensContribForum = new Forum(guild.GetForumChannel(1101521266105667716ul));
+                ScripterHiringForum = new HiringForum(MainGuild.GetForumChannel(1023545298640982056ul));
+                NonPluginSupportForum = new Forum(MainGuild.GetForumChannel(1027976885520584814ul));
+                CitizensContribForum = new Forum(MainGuild.GetForumChannel(1101521266105667716ul));
                 int cmdvers = 3;
                 if (!File.Exists("config/cmdvers.txt") || File.ReadAllText("config/cmdvers.txt") != cmdvers.ToString())
                 {
@@ -733,6 +735,16 @@ public static  class Program
                         (message as IUserMessage).ReplyAsync($"Hey! if you're here to ask about Citizens, please make a post in the <#1027028179908558918> channel.").Wait();
                     }
                     return;
+                }
+                if (message.Channel.Id == 1158042970214379611ul) // do-not-use
+                {
+                    if (message.Author is not SocketGuildUser user || user.IsBot || user.IsWebhook || user.Roles.Any(r => r.Id == HelperRoleID))
+                    {
+                        return;
+                    }
+                    SocketThreadChannel botSpam = MainGuild.GetThreadChannel(1134366605321699388ul); // mod bot spam
+                    botSpam.SendMessageAsync($"<@492222895058059274> ban <@{user.Id}> 7d Automatic ban - Posted in do-not-use channel").Wait();
+                    message.DeleteAsync().Wait();
                 }
                 if (message.Channel is not SocketThreadChannel thread)
                 {
