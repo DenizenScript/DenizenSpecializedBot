@@ -237,8 +237,11 @@ public static  class Program
                         {
                             if ((tags.Contains(forum.Bug.Id) || tags.Contains(forum.Feature.Id)) && !tags.Contains(forum.NeedsClose.Id))
                             {
-                                Accept("Not Yet Resolved", "This thread does not appear to be resolved. If you're sure it is resolved, please use `/pleaseclose` to mark it as needing to be closed first.");
-                                return;
+                                if (!thread.GetMessagesAsync(50).FlattenAsync().Result.Any(m => m.Author.Id == Client.CurrentUser.Id && m.Embeds is not null && m.Embeds.Any(e => e.Title == "Thread Closing Reminder")))
+                                {
+                                    Accept("Not Yet Resolved", "This thread does not appear to be resolved. If you're sure it is resolved, please use `/pleaseclose` to mark it as needing to be closed first.");
+                                    return;
+                                }
                             }
                             RemoveNeedTags();
                             RemoveResolutionTags();
