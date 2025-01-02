@@ -721,6 +721,10 @@ public static  class Program
                     LastScan = DateTimeOffset.UtcNow;
                     Task.Run(ScanAllThreads);
                 }
+                if (message.Channel is not IGuildChannel guildChannel || guildChannel.GuildId != GuildID)
+                {
+                    return;
+                }
                 if (message.Channel.Id == 477340871927398400ul) // chatter
                 {
                     if (message.Author.IsBot || message.Author.IsWebhook)
@@ -753,6 +757,14 @@ public static  class Program
                     SocketThreadChannel botSpam = MainGuild.GetThreadChannel(1134366605321699388ul); // mod bot spam
                     botSpam.SendMessageAsync($"<@492222895058059274> ban <@{user.Id}> 7d Automatic ban - Posted in do-not-use channel").Wait();
                     message.DeleteAsync().Wait();
+                }
+                if (message.Content.Contains("<@&315163832861589505>") || message.Content.Contains("<@&318268857787875329>"))
+                {
+                    if (message.Author is not SocketGuildUser user || user.IsBot || user.IsWebhook || user.Roles.Any(r => r.Id == HelperRoleID))
+                    {
+                        return;
+                    }
+                    message.Channel.SendMessageAsync($"<@492222895058059274> timeout <@{user.Id}> 12h Automatic Timeout (Rule 3) - Abusive role pings. Please read and follow the <#593363346124963850>").Wait();
                 }
                 if (message.Channel is not SocketThreadChannel thread)
                 {
