@@ -150,8 +150,12 @@ public static  class Program
             Refuse("Invalid Channel", "That's not valid here. Only valid in threads.");
             return;
         }
+        if (arg.User is not SocketGuildUser user)
+        {
+            return;
+        }
         thread.DownloadUsersAsync().Wait();
-        if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (arg.User is SocketGuildUser user && user.Roles.Any(r => r.Id == HelperRoleID || r.Id == HelperLiteRoleID))))
+        if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (user.Roles.Any(r => r.Id == HelperRoleID || r.Id == HelperLiteRoleID))))
         {
             Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
             return;
@@ -235,7 +239,7 @@ public static  class Program
                     {
                         if (forum != NonPluginSupportForum && forum != ScripterHiringForum)
                         {
-                            if ((tags.Contains(forum.Bug.Id) || tags.Contains(forum.Feature.Id)) && !tags.Contains(forum.NeedsClose.Id))
+                            if ((tags.Contains(forum.Bug.Id) || tags.Contains(forum.Feature.Id)) && !tags.Contains(forum.NeedsClose.Id) && !user.Roles.Any(r => r.Id == HelperRoleID))
                             {
                                 if (!thread.GetMessagesAsync(50).FlattenAsync().Result.Any(m => m.Author.Id == Client.CurrentUser.Id && m.Embeds is not null && m.Embeds.Any(e => e.Title == "Thread Closing Reminder")))
                                 {
