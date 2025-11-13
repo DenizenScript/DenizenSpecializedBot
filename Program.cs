@@ -761,6 +761,17 @@ public static  class Program
                     SocketThreadChannel botSpam = MainGuild.GetThreadChannel(1134366605321699388ul); // mod bot spam
                     botSpam.SendMessageAsync($"<@492222895058059274> ban <@{user.Id}> 7d Automatic ban - Posted in do-not-use channel").Wait();
                     message.DeleteAsync().Wait();
+                    // Sometimes a spambot will hit several channels and then do-not-use, so autonuke their most recent messages.
+                    foreach (SocketGuildChannel channel in MainGuild.Channels)
+                    {
+                        if (channel is ITextChannel text)
+                        {
+                            text.GetMessagesAsync(5).FlattenAsync().Result.Where(m => m.Author.Id == user.Id && Math.Abs((DateTimeOffset.UtcNow - m.Timestamp.ToUniversalTime()).TotalSeconds) < 300).ToList().ForEach(m =>
+                            {
+                                m.DeleteAsync().Wait();
+                            });
+                        }
+                    }
                 }
                 if (message.Content.Contains("<@&315163832861589505>") || message.Content.Contains("<@&318268857787875329>"))
                 {
