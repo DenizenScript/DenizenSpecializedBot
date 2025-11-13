@@ -13,7 +13,7 @@ As other Discords might want *similar* functionality, this code is released publ
 
 The MIT License (MIT)
 
-Copyright (c) 2022 The DenizenScript Team
+Copyright (c) 2022-2025 The DenizenScript Team
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
