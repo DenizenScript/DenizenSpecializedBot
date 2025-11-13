@@ -189,7 +189,7 @@ public static  class Program
                 Refuse("Invalid Channel", "That's not valid here. Only valid in the relevant support forum channels.");
                 return;
             }
-            List<ulong> tags = new(thread.AppliedTags);
+            List<ulong> tags = [.. thread.AppliedTags];
             if (arg.CommandName == "resolved" || arg.CommandName == "invalid" || arg.CommandName == "pleaseclose")
             {
                 // Fall through to normal handling
@@ -204,7 +204,7 @@ public static  class Program
         didDefer = true;
         try
         {
-            List<ulong> tags = new(thread.AppliedTags);
+            List<ulong> tags = [.. thread.AppliedTags];
             void RemoveNeedTags()
             {
                 tags.Remove(forum.NeedsDev.Id);
@@ -229,7 +229,7 @@ public static  class Program
             {
                 if (tags.Count > 5)
                 {
-                    tags = tags.Skip(tags.Count - 5).ToList();
+                    tags = [.. tags.Skip(tags.Count - 5)];
                 }
                 thread.ModifyAsync(t => { t.AppliedTags = tags; t.AutoArchiveDuration = duration; }).Wait();
             }
@@ -496,7 +496,7 @@ public static  class Program
     {
         if (thread.ParentChannel is SocketForumChannel forumChannel)
         {
-            List<ulong> tags = new(thread.AppliedTags);
+            List<ulong> tags = [.. thread.AppliedTags];
             bool doModifyTags = false;
             if (Forums.TryGetValue(forumChannel.Id, out Forum forum))
             {
@@ -535,7 +535,7 @@ public static  class Program
     {
         Console.WriteLine($"Cancel archive of {thread.Id}");
         thread.ModifyAsync(t => t.Archived = false).Wait();
-        thread.Guild.GetAuditLogsAsync(10).AggregateAsync((x, y) => x.Union(y).ToList()).AsTask().ContinueWith(list =>
+        thread.Guild.GetAuditLogsAsync(10).AggregateAsync((x, y) => [.. x.Union(y)]).AsTask().ContinueWith(list =>
         {
             try
             {
@@ -594,7 +594,7 @@ public static  class Program
                     }
                     if (!newThread.IsArchived && (!oldThread.HasValue || oldThread.Value.IsArchived))
                     {
-                        newThread.Guild.GetAuditLogsAsync(5).AggregateAsync((x, y) => x.Union(y).ToList()).AsTask().ContinueWith(list =>
+                        newThread.Guild.GetAuditLogsAsync(5).AggregateAsync((x, y) => [.. x.Union(y)]).AsTask().ContinueWith(list =>
                         {
                             RestAuditLogEntry audit = list.Result.Where(a => a.Action == ActionType.ThreadUpdate && a.Data is ThreadUpdateAuditLogData data && data.Before.IsArchived && !data.After.IsArchived && data.Thread?.Id == newThread.Id && newThread.Guild.GetUser(a.User.Id) is SocketGuildUser user).FirstOrDefault();
                             if (audit is null)
@@ -657,7 +657,7 @@ public static  class Program
 
     public static void CheckForThreadClose(RestThreadChannel thread, Forum forum)
     {
-        List<IMessage> messages = new(thread.GetMessagesAsync(2).FlattenAsync().Result);
+        List<IMessage> messages = [.. thread.GetMessagesAsync(2).FlattenAsync().Result];
         if (messages.Count < 2)
         {
             return;
@@ -683,7 +683,7 @@ public static  class Program
                 {
                     Console.WriteLine($"Apply auto-close to thread {thread.Id} / {thread.Name}, in forum {forum.ID}");
                     thread.SendMessageAsync(embed: new EmbedBuilder() { Title = "Auto-Close Timeout", Description = $"No response to request to close thread after {maxDays} days. Automatically closing." }.Build()).Wait();
-                    List<ulong> tags = new(thread.AppliedTags);
+                    List<ulong> tags = [.. thread.AppliedTags];
                     for (int i = 0; i < 5; i++) // Backup because might have borked duplicates
                     {
                         tags.Remove(forum.NeedsDev.Id);
@@ -777,7 +777,7 @@ public static  class Program
                 thread.DownloadUsersAsync().Wait();
                 if (thread.ParentChannel is SocketForumChannel forumChannel && Forums.TryGetValue(forumChannel.Id, out Forum forum) && thread.Owner is not null)
                 {
-                    List<ulong> tags = new(thread.AppliedTags);
+                    List<ulong> tags = [.. thread.AppliedTags];
                     TaggedNeed need = forum.GetTaggedNeed(tags);
                     Console.WriteLine($"{message.Author.Id} wrote a message in {thread.Id} which is owned by {thread.Owner.Id}");
                     if (message.Author.Id == thread.Owner.Id)
