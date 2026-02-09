@@ -2,4 +2,4 @@
 
 git pull origin master
 
-screen -dmS specializedbot dotnet run
+dotnet run
