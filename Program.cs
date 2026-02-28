@@ -154,7 +154,14 @@ public static  class Program
         {
             return;
         }
-        thread.DownloadUsersAsync().Wait();
+        try
+        {
+            thread.DownloadUsersAsync().Wait();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to download users for thread {thread.Id} because {ex}");
+        }
         if (!((thread.Owner is not null && arg.User.Id == thread.Owner.Id) || (user.Roles.Any(r => r.Id == HelperRoleID || r.Id == HelperLiteRoleID))))
         {
             Refuse("Not Allowed", "Only helpers or thread owners can use this command.");
