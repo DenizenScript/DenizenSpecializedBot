@@ -832,9 +832,10 @@ public static  class Program
 
     public static void Client_ReactionAdded(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
     {
-        if (channel.Id == 485397838923038730ul && message.Id == 488467326275158027ul)
+        if (channel.Id == 488466493701488642ul && message.Id == 488467326275158027ul && reaction.Emote.Name == "❌")
         {
-            Console.WriteLine($"Reaction {reaction.Emote.Name} added by {reaction.UserId} to message {message.Id} in channel {channel.Id}");
+            SocketThreadChannel botSpam = MainGuild.GetThreadChannel(1134366605321699388ul); // mod bot spam
+            botSpam.SendMessageAsync($"<@492222895058059274> ban <@{reaction.UserId}> 1d Automatic ban - Clicked the autoban react in the info channel").Wait();
         }
     }
 }
