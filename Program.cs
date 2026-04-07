@@ -80,6 +80,7 @@ public static  class Program
         Client.ThreadUpdated += (oldThread, newThread) => Task.Run(() => Client_ThreadUpdated(oldThread, newThread));
         Client.MessageReceived += (message) => Task.Run(() => Client_MessageReceived(message));
         Client.SlashCommandExecuted += (args) => Task.Run(() => Client_SlashCommandExecuted(args));
+        Client.ReactionAdded += (message, channel, reaction) => Task.Run(() => Client_ReactionAdded(message, channel, reaction));
         Console.WriteLine("Logging in...");
         Client.LoginAsync(TokenType.Bot, File.ReadAllText("config/token.txt")).Wait();
         Console.WriteLine("Starting...");
@@ -826,6 +827,14 @@ public static  class Program
         catch (Exception ex)
         {
             Console.WriteLine(ex);
+        }
+    }
+
+    public static void Client_ReactionAdded(Cacheable<IUserMessage, ulong> message, Cacheable<IMessageChannel, ulong> channel, SocketReaction reaction)
+    {
+        if (channel.Id == 485397838923038730ul && message.Id == 488467326275158027ul)
+        {
+            Console.WriteLine($"Reaction {reaction.Emote.Name} added by {reaction.UserId} to message {message.Id} in channel {channel.Id}");
         }
     }
 }
